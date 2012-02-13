@@ -1,11 +1,11 @@
 import gtk
 
 from body_group import BodyGroup
-from svg_path_group import SvgPathGroup
+from path_group import PathGroup
 
 if __name__ == '__main__':
-    svg_path_group = SvgPathGroup('circles.svg')
-    body_group = BodyGroup(svg_path_group.paths)
+    path_group = PathGroup.load_svg('circles.svg')
+    body_group = BodyGroup(path_group.paths)
 
 
     def translate(coords, x, y):
@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
 
     def on_click(widget, event):
-        x, y, width, height = svg_path_group.get_bounding_box()
+        x, y, width, height = path_group.get_bounding_box()
         coords = translate([event.get_coords()], -width / 2., -height / 2.)[0]
         shape = body_group.space.point_query_first(coords)
         if shape:
@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
 
     def draw_paths(*args, **kwargs):
-        x, y, width, height = svg_path_group.get_bounding_box()
+        x, y, width, height = path_group.get_bounding_box()
         cr.save()
         cr.translate(width / 2., height / 2.)
         for p in body_group.paths.values():
