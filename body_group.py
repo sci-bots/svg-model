@@ -1,17 +1,21 @@
 import pymunk as pm
 
-from svg_path_group import SvgPathGroup
 from seidel import Triangulator
 
 
 class BodyGroup(object):
-    def __init__(self):
+    def __init__(self, paths=None):
         # Create virtual space to add bodies to.  Each body will act as a sensor to
         # detect clicking, etc. on a path in the SVG.
         self.space = pm.Space()
         self.bodies = {}
-        self.paths = {}
         self.reverse_bodies = {}
+        if paths is None:
+            self.paths = {}
+        else:
+            self.paths = paths
+            for name, geo_path in self.paths.iteritems():
+                self.add_path(name, geo_path)
 
     def add_path(self, name, geo_path):
         body = pm.Body()
@@ -35,9 +39,3 @@ class BodyGroup(object):
         return self.reverse_bodies[body]
 
 
-class SvgBodyGroup(SvgPathGroup, BodyGroup):
-    def __init__(self, svg_path):
-        BodyGroup.__init__(self)
-        SvgPathGroup.__init__(self, svg_path)
-        for name, geo_path in self.paths.iteritems():
-            self.add_path(name, geo_path)
