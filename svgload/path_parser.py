@@ -84,7 +84,7 @@ class LoopTracer(object):
 
     def get_point(self, command):
         x = command[1]
-        y = -command[2]
+        y = command[2]
         return x, y
 
     def onMove(self, command):
