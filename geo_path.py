@@ -1,6 +1,5 @@
 
 from loop import Loop
-from tessellate import tessellate
 
 
 class Path(object):
@@ -73,16 +72,3 @@ class ColoredPath(Path):
         for vert in triangles:
             yield vert[0]
             yield vert[1]
-
-
-    def add_to_batch(self, batch):
-        '''
-        Tessellate loops
-        '''
-        if self.color:
-            triangles = tessellate(loop.verts for loop in self.loops)
-            num_verts = len(triangles)
-            serial_verts = list(self._serialise_verts(triangles))
-            colors = self.color * num_verts
-            indices = range(num_verts)
-            import pudb; pudb.set_trace()

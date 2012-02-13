@@ -1,6 +1,6 @@
 import gtk
 import pymunk as pm
-from geom.svgload.svg_parser import SvgParser
+from svgload.svg_parser import SvgParser
 from seidel import Triangulator
 
 

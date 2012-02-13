@@ -1,12 +1,9 @@
-
 import xml.dom.minidom
-
-from shapely.geometry import MultiPoint
 
 from path_parser import PathParser
 
-from geom.loop import Loop
-from geom.path import Path
+from loop import Loop
+from geo_path import Path
 
 
 class Svg(object):
@@ -35,12 +32,21 @@ class Svg(object):
             path = self.paths[name]
             path.add_to_batch(batch)
 
+    def get_bounding_box(self):
+        from itertools import chain
+        points = list(self.all_verts())
+        x_vals = zip(*points)[0]
+        y_vals = zip(*points)[1]
+        min_x, min_y = min(x_vals), min(y_vals)
+        max_x, max_y = max(x_vals), max(y_vals)
+        return Loop([(min_x, min_y), (min_x, max_y), (max_x, max_y),
+                (max_x, min_y)])
 
     def get_boundary(self):
         if 'boundary' in self.paths:
             boundary = self.paths['boundary']
         else:
-            boundary = Path([self.convex_hull()])
+            boundary = Path([self.get_bounding_box()])
         return boundary
 
 
@@ -49,13 +55,6 @@ class Svg(object):
             for loop in path.loops:
                 for vert in loop.verts:
                     yield vert
-
-
-    def convex_hull(self):
-        points = list(self.all_verts())
-        multipoint = MultiPoint(points)
-        hullpoints = [v for v in multipoint.convex_hull.exterior.coords][:-1]
-        return Loop(hullpoints)
 
 
 class SvgParser(object):

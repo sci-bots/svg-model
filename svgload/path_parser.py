@@ -1,6 +1,5 @@
-
-from geom.loop import Loop
-from geom.path import ColoredPath
+from loop import Loop
+from geo_path import ColoredPath
 
 
 class ParseError(Exception):
