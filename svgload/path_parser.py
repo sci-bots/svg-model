@@ -1,4 +1,4 @@
-from loop import Loop
+from svg_model.loop import Loop
 from geo_path import ColoredPath
 
 

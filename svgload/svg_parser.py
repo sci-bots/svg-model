@@ -2,7 +2,7 @@ import xml.dom.minidom
 
 from path_parser import PathParser
 
-from loop import Loop
+from svg_model.loop import Loop
 from geo_path import Path
 
 
