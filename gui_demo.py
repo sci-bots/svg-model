@@ -1,7 +1,7 @@
 import gtk
 
-from body_group import BodyGroup
-from path_group import PathGroup
+from svg_model.body_group import BodyGroup
+from svg_model.path_group import PathGroup
 
 if __name__ == '__main__':
     path_group = PathGroup.load_svg('circles.svg')

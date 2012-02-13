@@ -1,5 +1,5 @@
 from svg_model.loop import Loop
-from geo_path import ColoredPath
+from svg_model.geo_path import ColoredPath
 
 
 class ParseError(Exception):

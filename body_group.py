@@ -1,6 +1,6 @@
 import pymunk as pm
 
-from seidel import Triangulator
+from svg_model.seidel import Triangulator
 
 
 class BodyGroup(object):

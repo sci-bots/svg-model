@@ -1,9 +1,8 @@
 import xml.dom.minidom
 
-from path_parser import PathParser
-
+from svg_model.svgload.path_parser import PathParser
 from svg_model.loop import Loop
-from geo_path import Path
+from svg_model.geo_path import Path
 
 
 class Svg(object):
