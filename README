@@ -1,0 +1,6 @@
+A Python module for parsing an SVG file to a group of paths.
+Also, given a group of paths, one can construct a group of pymunk bodies to
+interact with the paths.
+
+Derived from the geometry code of (see LICENSE and files for details):
+    http://code.google.com/p/sole-scion/
