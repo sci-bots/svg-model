@@ -84,7 +84,8 @@ class SvgParser(object):
         parser = PathParser()
         for path_tag in path_tags:
             id, path = parser.parse(path_tag)
-            svg.add_path(id, path)
+            if path.loops:
+                svg.add_path(id, path)
 
         #x, y = svg.get_boundary().get_centroid()
         x, y = svg.get_boundary().get_center()

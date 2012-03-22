@@ -91,6 +91,10 @@ class PathDataParser(object):
 
         if command:
             parsed.append(tuple(command))
+
+        if parsed[0][0] == 'M' and parsed[-1][0] == 'L'\
+                and parsed[0][1:] == parsed[-1][1:]:
+            parsed[-1] = ('z',)
         return parsed
 
 
