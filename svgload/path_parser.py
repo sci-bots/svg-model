@@ -175,7 +175,7 @@ class PathParser(object):
 
     def get_id(self, attributes):
         if 'id' in attributes.keys():
-            return attributes['id'].value
+            return attributes['id']
         else:
             self.next_id += 1
             return self.next_id - 1
@@ -216,18 +216,18 @@ class PathParser(object):
         where:  'id' is the path tag's id attribute
                 'path' is a populated instance of SvgPath
         '''
-        id = self.get_id(tag.attributes)
+        id = self.get_id(tag.attrib)
         
         parser = PathDataParser()
-        path_data = tag.attributes['d'].value
+        path_data = tag.attrib['d']
         path_tuple = parser.to_tuples(path_data)
 
         tracer = LoopTracer()
         loops = tracer.to_loops(path_tuple)
         path = ColoredPath(loops)
 
-        if 'style' in tag.attributes.keys():
-            style_data = tag.attributes['style'].value
+        if 'style' in tag.attrib.keys():
+            style_data = tag.attrib['style']
             path.color = self.parse_style(style_data)
 
         return id, path

@@ -14,9 +14,11 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
-import xml.dom.minidom
+from lxml import etree
 
-from svg_model.svgload.path_parser import PathParser
+from path import path
+
+from svg_model.svgload.path_parser import PathParser, ParseError
 from svg_model.loop import Loop
 from svg_model.geo_path import Path
 
@@ -44,8 +46,8 @@ class Svg(object):
         primitive.
         '''
         for name in self.path_order:
-            path = self.paths[name]
-            path.add_to_batch(batch)
+            svg_path = self.paths[name]
+            svg_path.add_to_batch(batch)
 
     def get_bounding_box(self):
         from itertools import chain
@@ -66,8 +68,8 @@ class Svg(object):
 
 
     def all_verts(self):
-        for path in self.paths.itervalues():
-            for loop in path.loops:
+        for svg_path in self.paths.itervalues():
+            for loop in svg_path.loops:
                 for vert in loop.verts:
                     yield vert
 
@@ -78,18 +80,27 @@ class SvgParser(object):
     in the file.
     '''
     def parse(self, filename):
+        filename = path(filename)
         svg = Svg()
-        doc = xml.dom.minidom.parse(filename)       
-        path_tags = doc.getElementsByTagName('path')
+        doc = etree.parse(filename)
+        path_tags = doc.xpath('//svg:path',
+                namespaces={'svg': 'http://www.w3.org/2000/svg'})
         parser = PathParser()
         for path_tag in path_tags:
-            id, path = parser.parse(path_tag)
-            if path.loops:
-                svg.add_path(id, path)
+            try:
+                id, svg_path = parser.parse(path_tag)
+                if svg_path.loops:
+                    svg.add_path(id, svg_path)
+            except (ParseError, ), why:
+                message = 'Error parsing %s:%d, %s\n    %s'\
+                        % (filename.name, path_tag.sourceline,
+                                why.message, etree.tostring(path_tag))
+                                        
+                raise ParseError, message
 
         #x, y = svg.get_boundary().get_centroid()
         x, y = svg.get_boundary().get_center()
-        for path in svg.paths.values():
-            path.offset(-x, -y)
+        for svg_path in svg.paths.values():
+            svg_path.offset(-x, -y)
         return svg
 
