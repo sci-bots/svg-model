@@ -153,7 +153,7 @@ class SvgParser(object):
         False
         '''
         svg = Svg()
-        path_tags = xml_root.xpath('//svg:path',
+        path_tags = xml_root.xpath('//svg:g/svg:path',
                 namespaces={'svg': 'http://www.w3.org/2000/svg'})
         parser = PathParser()
         for path_tag in path_tags:
