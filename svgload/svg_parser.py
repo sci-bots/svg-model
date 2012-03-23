@@ -14,13 +14,25 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
-from lxml import etree
+import warnings
 
+from lxml import etree
 from path import path
 
 from svg_model.svgload.path_parser import PathParser, ParseError
 from svg_model.loop import Loop
 from svg_model.geo_path import Path
+
+
+class SvgParseError(Exception):
+    pass
+
+
+def parse_warning(*args):
+    filename, tag, message = args
+    msg = 'Error parsing %s:%d, %s\n    %s'
+    warnings.warn(msg % (filename.name, tag.sourceline, message,
+            etree.tostring(tag)), RuntimeWarning)
 
 
 class Svg(object):
@@ -79,7 +91,7 @@ class SvgParser(object):
     parse(filename) returns an Svg object, populated from the <path> tags
     in the file.
     '''
-    def parse(self, filename):
+    def parse(self, filename, on_error=None):
         filename = path(filename)
         svg = Svg()
         doc = etree.parse(filename)
@@ -92,11 +104,11 @@ class SvgParser(object):
                 if svg_path.loops:
                     svg.add_path(id, svg_path)
             except (ParseError, ), why:
-                message = 'Error parsing %s:%d, %s\n    %s'\
-                        % (filename.name, path_tag.sourceline,
-                                why.message, etree.tostring(path_tag))
-                                        
-                raise ParseError, message
+                args = (filename, path_tag, why.message)
+                if on_error:
+                    on_error(*args)
+                else:
+                    raise SvgParseError(*args)
 
         #x, y = svg.get_boundary().get_centroid()
         x, y = svg.get_boundary().get_center()

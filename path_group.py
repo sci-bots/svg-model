@@ -23,10 +23,10 @@ class PathGroup(object):
         self._bounding_box = self._boundary.get_bounding_box()
 
     @classmethod
-    def load_svg(cls, svg_path):
+    def load_svg(cls, svg_path, on_error=None):
         # Parse SVG file.
         parser = SvgParser()
-        svg = parser.parse(svg_path)
+        svg = parser.parse(svg_path, on_error)
         paths = svg.paths
         boundary = svg.get_boundary()
         del svg

@@ -14,8 +14,8 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
-from svg_model.loop import Loop
-from svg_model.geo_path import ColoredPath
+from ..loop import Loop
+from ..geo_path import ColoredPath
 
 
 class ParseError(Exception):
@@ -215,6 +215,36 @@ class PathParser(object):
         returns (id, path)
         where:  'id' is the path tag's id attribute
                 'path' is a populated instance of SvgPath
+
+        >>> from lxml import etree
+        >>> from lxml.builder import E
+        >>> path_tag = etree.XML("""
+        ...     <path id="path0"
+        ...         style="fill:#0000ff;stroke:#000000;stroke-width:0.10000000000000001;stroke-miterlimit:4;stroke-dasharray:none"
+        ...         d="M 525.93385,261.47322 L 525.933 85,269.65826 L 534.07239,269.65826 L 534.07239,261.47322 L 525.93385,261.47322" />
+        ... """)
+        >>> path_parser = PathParser()
+        >>> id, svg_path = path_parser.parse(path_tag)
+        >>> id
+        'path0'
+        >>> svg_path.color
+        (0, 0, 255)
+        >>> len(svg_path.loops)
+        1
+        >>> svg_path.loops[0].verts
+        [(534.07239, 261.47322), (534.07239, 269.65826), (525.933, 85), (525.93385, 261.47322)]
+
+        Note that only absolute commands (i.e., uppercase) are currently supported.  For example:
+        paths will throw a ParseError exception.  For example:
+
+        >>> path_tag = E.path(id="path0", d="M 636.0331,256.9345 l 636.0331,256.9345")
+        >>> print etree.tostring(path_tag)
+        <path d="M 636.0331,256.9345 l 636.0331,256.9345" id="path0"/>
+        >>> path_parser.parse(path_tag)
+        Traceback (most recent call last):
+        ...
+        ParseError: unsupported svg path command: l
+        >>> 
         '''
         id = self.get_id(tag.attrib)
         
