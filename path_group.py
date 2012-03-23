@@ -26,7 +26,7 @@ class PathGroup(object):
     def load_svg(cls, svg_path, on_error=None):
         # Parse SVG file.
         parser = SvgParser()
-        svg = parser.parse(svg_path, on_error)
+        svg = parser.parse_file(svg_path, on_error)
         paths = svg.paths
         boundary = svg.get_boundary()
         del svg
