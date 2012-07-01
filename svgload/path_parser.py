@@ -107,6 +107,24 @@ class LoopTracer(object):
         y = command[2]
         return x, y
 
+    def onVerticalMove(self, command):
+        y = command[1]
+        prev_x, prev_y = self.current_loop[-1]
+        if command[0] == 'v':
+            new_y = prev_y + y
+        else:
+            new_y = y
+        self.current_loop.append((prev_x, new_y))
+
+    def onHorizontalMove(self, command):
+        x = command[1]
+        if command[0] == 'h':
+            new_x = prev_x + x
+        else:
+            new_x = x
+        prev_x, prev_y = self.current_loop[-1]
+        self.current_loop.append((new_x, prev_y))
+
     def onMove(self, command):
         x, y = self.get_point(command)
         self.current_loop = [(x, y)]
@@ -150,6 +168,10 @@ class LoopTracer(object):
         lookup = {
             'M': self.onMove,
             'L': self.onLine,
+            'H': self.onHorizontalMove,
+            'h': self.onHorizontalMove,
+            'V': self.onVerticalMove,
+            'v': self.onVerticalMove,
             'Z': self.onClose,
             'z': self.onClose,
         }
