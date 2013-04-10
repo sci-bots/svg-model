@@ -64,7 +64,6 @@ class Svg(object):
             svg_path.add_to_batch(batch)
 
     def get_bounding_box(self):
-        from itertools import chain
         points = list(self.all_verts())
         x_vals = zip(*points)[0]
         y_vals = zip(*points)[1]
@@ -79,7 +78,6 @@ class Svg(object):
         else:
             boundary = Path([self.get_bounding_box()])
         return boundary
-
 
     def all_verts(self):
         for svg_path in self.paths.itervalues():

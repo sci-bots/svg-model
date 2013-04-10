@@ -39,7 +39,11 @@ class BodyGroup(object):
             # We will add all triangles resulting from the tessellation as shapes
             # for the body.  That way, clicks on any of the triangles will be
             # detected as a click on this body.
-            triangulator = Triangulator(loop.verts)
+            try:
+                triangulator = Triangulator(loop.verts)
+            except:
+                raise Exception("There was a problem tesselating path %s." % \
+                                name)
             triangles = triangulator.triangles()
             for triangle in triangles:
                 shape = pm.Poly(body, triangle)

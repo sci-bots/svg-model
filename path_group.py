@@ -28,6 +28,8 @@ class PathGroup(object):
         parser = SvgParser()
         svg = parser.parse_file(svg_path, on_error)
         paths = svg.paths
+        if not paths:
+            raise Exception("File has no valid paths.")
         boundary = svg.get_boundary()
         del svg
         del parser
