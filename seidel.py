@@ -29,7 +29,7 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # 
-from random import shuffle
+import random
 from math import atan2
 
 ##
@@ -305,8 +305,12 @@ class Triangulator(object):
                 edges.append(Edge(q, p))
             else: 
                 edges.append(Edge(p, q))
+        # Use a consistent seed point until issue
+        # http://microfluidics.utoronto.ca/microdrop/ticket/106 is resolved.
+        # Otherwise, errors can occur non-reproducibly.
+        random.seed(1)
         # Randomized incremental algorithm
-        shuffle(edges)
+        random.shuffle(edges)
         return edges
 
 def shear_transform(point):
