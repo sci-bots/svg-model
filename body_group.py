@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 '''
 import pymunk as pm
 
-from svg_model.seidel import Triangulator
+from .seidel import Triangulator
 
 
 class BodyGroup(object):
