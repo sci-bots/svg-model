@@ -7,6 +7,7 @@ setup(name='svg_model',
       'paths.',
       keywords='svg model pymunk',
       author='Christian Fobel',
+      author_email='christian@fobel.net',
       url='http://github.com/cfobel/svg_model.git',
       license='GPL',
       packages=['svg_model', 'svg_model.svgload'])
