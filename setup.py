@@ -1,8 +1,10 @@
 from distutils.core import setup
 
+import version
+
 
 setup(name='svg_model',
-      version='0.0.1',
+      version=version.getVersion(),
       description='A Python module for parsing an SVG file to a group of '
       'paths.',
       keywords='svg model pymunk',
