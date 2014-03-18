@@ -17,7 +17,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 import warnings
 
 from lxml import etree
-from path import path
+from path_helpers import path
 
 from .path_parser import PathParser, ParseError
 from ..loop import Loop
