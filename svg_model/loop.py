@@ -14,7 +14,7 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
-from pymunk import moment_for_poly, Poly
+#from pymunk import moment_for_poly, Poly
 
 
 class Loop(object):
@@ -56,10 +56,9 @@ class Loop(object):
         '''
         Assume y-axis points up
         '''
-        retval = self.get_signed_area() > 0
         return self.get_signed_area() > 0
 
-        
+
     def get_mass(self):
         return self.get_area() * self.density
 
@@ -76,11 +75,11 @@ class Loop(object):
         polyarea = self.get_area()
         x /= 6 * polyarea
         y /= 6 * polyarea
-        return (x, y) 
+        return (x, y)
 
 
-    def get_moment(self):
-        return moment_for_poly(self.get_mass(), self.verts, (0, 0))
+    #def get_moment(self):
+        #return moment_for_poly(self.get_mass(), self.verts, (0, 0))
 
 
     def offset(self, x, y):
@@ -90,9 +89,9 @@ class Loop(object):
         ]
 
 
-    def get_shape(self, body):
-        shape = Poly(body, self.verts, (0, 0))
-        shape.elasticity = 0.5
-        shape.friction = 10.0
-        return shape
+    #def get_shape(self, body):
+        #shape = Poly(body, self.verts, (0, 0))
+        #shape.elasticity = 0.5
+        #shape.friction = 10.0
+        #return shape
 
