@@ -1,5 +1,7 @@
+import sys
 from distutils.core import setup
 
+sys.path.insert(0, '.')
 import version
 
 
