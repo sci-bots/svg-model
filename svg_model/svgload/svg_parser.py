@@ -15,10 +15,10 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
 import warnings
+from collections import OrderedDict
 
 from lxml import etree
 from path_helpers import path
-
 from .path_parser import PathParser, ParseError
 from ..loop import Loop
 from ..geo_path import Path
@@ -44,14 +44,10 @@ class Svg(object):
     rendering as a single OpenGL GL_TRIANGLES indexed vert primitive.
     '''
     def __init__(self):
-        self.paths = {}
-        self.path_order = []
-
+        self.paths = OrderedDict()
 
     def add_path(self, id, path):
         self.paths[id] = path
-        self.path_order.append(id)
-
 
     def add_to_batch(self, batch):
         '''
@@ -59,7 +55,7 @@ class Svg(object):
         GL_TRIANGLES, so the batch will aggregate them all into a single OpenGL
         primitive.
         '''
-        for name in self.path_order:
+        for name in self.paths:
             svg_path = self.paths[name]
             svg_path.add_to_batch(batch)
 
@@ -153,7 +149,7 @@ class SvgParser(object):
         svg = Svg()
         svg_namespace = {'svg': 'http://www.w3.org/2000/svg'}
         path_tags = xml_root.xpath('(/svg:svg|/svg:svg/svg:g)/svg:path',
-                namespaces=svg_namespace)
+                                   namespaces=svg_namespace)
         parser = PathParser()
         for path_tag in path_tags:
             try:
