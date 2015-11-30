@@ -20,8 +20,8 @@ from .seidel import Triangulator
 
 class BodyGroup(object):
     def __init__(self, paths=None):
-        # Create virtual space to add bodies to.  Each body will act as a sensor to
-        # detect clicking, etc. on a path in the SVG.
+        # Create virtual space to add bodies to.  Each body will act as a
+        # sensor to detect clicking, etc. on a path in the SVG.
         self.space = pm.Space()
         self.bodies = {}
         self.reverse_bodies = {}
@@ -35,10 +35,10 @@ class BodyGroup(object):
     def add_path(self, name, geo_path):
         body = pm.Body()
         for loop in geo_path.loops:
-            # Triangulate/tessellate path, since pymunk only supports convex paths.
-            # We will add all triangles resulting from the tessellation as shapes
-            # for the body.  That way, clicks on any of the triangles will be
-            # detected as a click on this body.
+            # Triangulate/tessellate path, since pymunk only supports convex
+            # paths. We will add all triangles resulting from the tessellation
+            # as shapes for the body.  That way, clicks on any of the triangles
+            # will be detected as a click on this body.
             try:
                 triangulator = Triangulator(loop.verts)
             except:
