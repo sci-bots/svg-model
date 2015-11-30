@@ -2,7 +2,7 @@
 import types
 
 import pandas as pd
-from svg_model.seidel import Triangulator
+from .seidel import Triangulator
 
 
 def tesselate_shapes_frame(df_shapes, shape_i_columns):
