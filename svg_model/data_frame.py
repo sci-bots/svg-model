@@ -8,7 +8,7 @@ def get_svg_path_frame(svg_path):
     frames = []
     for i, loop_i in enumerate(svg_path.loops):
         verts = pd.DataFrame(loop_i.verts, columns=['x', 'y'])
-        verts.insert(0, 'vert_i', np.arange(verts.shape[0], dtype=int))
+        verts.insert(0, 'vertex_i', np.arange(verts.shape[0], dtype=int))
         verts.insert(0, 'loop_i', i)
         frames.append(verts)
     return pd.concat(frames)
@@ -31,7 +31,7 @@ def close_paths(df_svg):
     close_points = df_svg.groupby('path_id').nth(0)
     # Set index of closing vertex (point) to next index in sequence for each
     # path.
-    close_points.loc[:, 'vert_i'] = df_svg.groupby('path_id')['path_id'].count()
+    close_points.loc[:, 'vertex_i'] = df_svg.groupby('path_id')['path_id'].count()
     return pd.concat([df_svg,
                       close_points.reset_index()]).sort(df_svg.columns[:3]
                                                         .tolist())
@@ -60,18 +60,18 @@ def get_path_areas(df_svg, signed=False):
     '''
     # Make a copy of the SVG data frame since we need to add columns to it.
     df_i = df_svg.copy()
-    df_i['vert_count'] = df_i.groupby('path_id')['x'].transform('count')
+    df_i['vertex_count'] = df_i.groupby('path_id')['x'].transform('count')
     df_i['area_a'] = df_i.x
     df_i['area_b'] = df_i.y
 
     # Vector form of [Shoelace formula][1].
     #
     # [1]: http://en.wikipedia.org/wiki/Shoelace_formula
-    df_i.loc[df_i.vert_i == df_i.vert_count - 1, 'area_a'] *= df_i.loc[df_i.vert_i == 0, 'y'].values
-    df_i.loc[df_i.vert_i < df_i.vert_count - 1, 'area_a'] *= df_i.loc[df_i.vert_i > 0, 'y'].values
+    df_i.loc[df_i.vertex_i == df_i.vertex_count - 1, 'area_a'] *= df_i.loc[df_i.vertex_i == 0, 'y'].values
+    df_i.loc[df_i.vertex_i < df_i.vertex_count - 1, 'area_a'] *= df_i.loc[df_i.vertex_i > 0, 'y'].values
 
-    df_i.loc[df_i.vert_i == df_i.vert_count - 1, 'area_b'] *= df_i.loc[df_i.vert_i == 0, 'x'].values
-    df_i.loc[df_i.vert_i < df_i.vert_count - 1, 'area_b'] *= df_i.loc[df_i.vert_i > 0, 'x'].values
+    df_i.loc[df_i.vertex_i == df_i.vertex_count - 1, 'area_b'] *= df_i.loc[df_i.vertex_i == 0, 'x'].values
+    df_i.loc[df_i.vertex_i < df_i.vertex_count - 1, 'area_b'] *= df_i.loc[df_i.vertex_i > 0, 'x'].values
 
     area_components = df_i.groupby('path_id')[['area_a', 'area_b']].sum()
     path_areas = .5 * (area_components['area_b'] - area_components['area_a'])
@@ -124,6 +124,6 @@ def triangulate_svg_frame(svg_frame):
             frame.insert(0, 'path_id', path_id)
             frame.insert(1, 'loop_i', loop_i)
             frame.insert(2, 'triangle_i', triangle_i)
-            frame.insert(3, 'vert_i', np.arange(frame.shape[0]))
+            frame.insert(3, 'vertex_i', np.arange(frame.shape[0]))
             triangle_frames.append(frame)
     return pd.concat(triangle_frames)
