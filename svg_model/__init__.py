@@ -1,7 +1,7 @@
 # coding: utf-8
 import pandas as pd
 import pint  # Unit conversion from inches to mm
-from .data_frame import get_svg_frame, get_path_infos
+from .data_frame import get_shape_infos
 
 
 # Convert Inkscape pixels-per-inch (PPI) to pixels-per-mm (PPmm).
@@ -11,49 +11,20 @@ INKSCAPE_PPI = 90
 INKSCAPE_PPmm = INKSCAPE_PPI / ureg.inch.to('mm')
 
 
-def get_paths_frame_with_centers(df_paths):
+def svg_polygons_to_df(svg_source, xpath='svg:polygon', namespaces=None):
     '''
-    Compute the center point of each polygon path, and the offset of each vertex to the corresponding polygon center point.
+    Return a `pandas.DataFrame` with one row per vertex for all polygons in
+    `svg_source`, with the following columns:
+
+     - `path_id`: The `id` attribute of the corresponding polygon.
+     - `vertex_i`: The index of the vertex within the corresponding polygon.
+     - `x`: The x-coordinate of the vertex.
+     - `y`: The y-coordinate of the vertex.
 
     Arguments
     ---------
 
-     - `df_paths`: Table of polygon path vertices (one row per vertex).
-         * Table rows with the same value in the `path_id` column are grouped
-           together as a polygon.
-    '''
-    df_paths = df_paths.copy()
-    # Get coordinates of center of each path.
-    df_paths_info = get_path_infos(df_paths)
-    path_centers = df_paths_info[['x', 'y']] + .5 * df_paths_info[['width', 'height']].values
-    df_paths['x_center'] = path_centers.x[df_paths.path_id].values
-    df_paths['y_center'] = path_centers.y[df_paths.path_id].values
-
-    # Calculate coordinate of each path vertex relative to center point of path.
-    center_offset = df_paths[['x', 'y']] - df_paths[['x_center', 'y_center']].values
-    return df_paths.join(center_offset, rsuffix='_center_offset')
-
-
-def get_scaled_svg_frame(svg_filepath, **kwargs):
-    # Read device layout from SVG file.
-    df_device = get_svg_frame(svg_filepath)
-    return scale_svg_frame(df_device, **kwargs)
-
-
-def scale_svg_frame(df_device, scale=INKSCAPE_PPmm.magnitude):
-    # Offset device, such that all coordinates are >= 0.
-    df_device[['x', 'y']] -= df_device[['x', 'y']].min()
-
-    # Scale path coordinates based on Inkscape default of 90 pixels-per-inch.
-    df_device[['x', 'y']] /= INKSCAPE_PPmm.magnitude
-
-    df_paths = get_paths_frame_with_centers(df_device)
-    return df_paths
-
-
-def svg_polygons_to_df(svg_source, xpath='svg:polygon', namespaces=None):
-    '''
-    `svg_source`: A file path, URI, or file-like object.
+     - `svg_source`: A file path, URI, or file-like object.
     '''
     from lxml import etree
 
@@ -72,9 +43,62 @@ def svg_polygons_to_df(svg_source, xpath='svg:polygon', namespaces=None):
                                .split(' ')],
                               columns=['x', 'y']).reset_index()
                  .rename(columns={'index': 'vertex_i'}))
+        # # TODO #
+        # Add support for:
+        #
+        #  - fill, stroke
+        #  - transform: matrix, scale, etc.
+        #      * **N.B.,** This is necessary to map to x,y coords to actual
+        #        scale and position.
         frame.insert(0, 'path_id', polygon_i.attrib['id'])
         frames.append(frame)
     return pd.concat(frames).reset_index(drop=True)
+
+
+def compute_shape_centers(df_shapes, shape_i_columns, inplace=False):
+    '''
+    Compute the center point of each polygon shape, and the offset of each
+    vertex to the corresponding polygon center point.
+
+    Arguments
+    ---------
+
+     - `df_shapes`: Table of polygon shape vertices (one row per vertex).
+         * Table rows with the same value in the `path_id` column are grouped
+           together as a polygon.
+    '''
+    if not inplace:
+        df_shapes = df_shapes.copy()
+
+    # Get coordinates of center of each path.
+    df_shapes_info = get_shape_infos(df_shapes, shape_i_columns)
+    path_centers = df_shapes_info[['x', 'y']] + .5 * df_shapes_info[['width', 'height']].values
+    df_shapes['x_center'] = path_centers.x[df_shapes.path_id].values
+    df_shapes['y_center'] = path_centers.y[df_shapes.path_id].values
+
+    # Calculate coordinate of each path vertex relative to center point of path.
+    center_offset = df_shapes[['x', 'y']] - df_shapes[['x_center', 'y_center']].values
+    return df_shapes.join(center_offset, rsuffix='_center_offset')
+
+
+def scale_points(df_points, scale=INKSCAPE_PPmm.magnitude, inplace=False):
+    '''
+    Translate points such that bounding box is anchored at (0, 0) and scale `x`
+    and `y` columns of input frame by specified `scale`.
+
+    By default, scale to millimeters based on Inkscape default of 90
+    pixels-per-inch.
+    '''
+    if not inplace:
+        df_points = df_points.copy()
+
+    # Offset device, such that all coordinates are >= 0.
+    df_points[['x', 'y']] -= df_points[['x', 'y']].min()
+
+    # Scale path coordinates.
+    df_points[['x', 'y']] /= scale
+
+    return df_points
 
 
 def scale_to_fit_a_in_b(a_shape, b_shape):
@@ -151,3 +175,10 @@ def fit_points_in_bounding_box_params(df_points, bounding_box,
     offset = .5 * (bounding_box - points_bbox * padded_scale)
     offset.index = ['x', 'y']
     return offset, padded_scale
+
+
+# ## Deprecated ##
+def get_scaled_svg_frame(svg_filepath, **kwargs):
+    raise NotImplementedError('get_scaled_svg_frame function is deprecated. '
+                              'Use `svg_model.scale_points` and '
+                              '`svg_model.compute_shape_centers`')

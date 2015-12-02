@@ -1,28 +1,88 @@
 import numpy as np
 import pandas as pd
+import warnings
 
 from .svgload import svg_parser
 
 
-def get_svg_path_frame(svg_path):
-    frames = []
-    for i, loop_i in enumerate(svg_path.loops):
-        verts = pd.DataFrame(loop_i.verts, columns=['x', 'y'])
-        verts.insert(0, 'vertex_i', np.arange(verts.shape[0], dtype=int))
-        verts.insert(0, 'loop_i', i)
-        frames.append(verts)
-    return pd.concat(frames)
+def get_shape_areas(df_shapes, shape_i_columns, signed=False):
+    '''
+    Return a `pandas.Series` indexed by `shape_i_columns` (i.e., each entry
+    corresponds to a single shape/polygon), containing the following columns
+    the area of each shape.
+
+    If `signed=True`, a positive area value corresponds to a clockwise loop,
+    whereas a negative area value corresponds to a counter-clockwise loop.
+    '''
+    # Make a copy of the SVG data frame since we need to add columns to it.
+    df_i = df_shapes.copy()
+    df_i['vertex_count'] = (df_i.groupby(shape_i_columns)['x']
+                            .transform('count'))
+    df_i['area_a'] = df_i.x
+    df_i['area_b'] = df_i.y
+
+    # Vector form of [Shoelace formula][1].
+    #
+    # [1]: http://en.wikipedia.org/wiki/Shoelace_formula
+    df_i.loc[df_i.vertex_i == df_i.vertex_count - 1, 'area_a'] *= df_i.loc[df_i.vertex_i == 0, 'y'].values
+    df_i.loc[df_i.vertex_i < df_i.vertex_count - 1, 'area_a'] *= df_i.loc[df_i.vertex_i > 0, 'y'].values
+
+    df_i.loc[df_i.vertex_i == df_i.vertex_count - 1, 'area_b'] *= df_i.loc[df_i.vertex_i == 0, 'x'].values
+    df_i.loc[df_i.vertex_i < df_i.vertex_count - 1, 'area_b'] *= df_i.loc[df_i.vertex_i > 0, 'x'].values
+
+    area_components = df_i.groupby(shape_i_columns)[['area_a', 'area_b']].sum()
+    shape_areas = .5 * (area_components['area_b'] - area_components['area_a'])
+
+    if not signed:
+        shape_areas.name = 'area'
+        return shape_areas.abs()
+    else:
+        shape_areas.name = 'signed_area'
+        return shape_areas
 
 
-def get_svg_frame(svg_filepath):
-    parser = svg_parser.SvgParser()
-    svg = parser.parse_file(svg_filepath, lambda *args: None)
-    frames = []
-    for k, p in svg.paths.iteritems():
-        svg_frame = get_svg_path_frame(p)
-        svg_frame.insert(0, 'path_id', k)
-        frames.append(svg_frame)
-    return pd.concat(frames).reset_index(drop=True)
+def get_bounding_boxes(df_shapes, shape_i_columns):
+    '''
+    Return a `pandas.DataFrame` indexed by `shape_i_columns` (i.e., each row
+    corresponds to a single shape/polygon), containing the following columns:
+
+     - `width`: The width of the widest part of the shape.
+     - `height`: The height of the tallest part of the shape.
+    '''
+    xy_groups = df_shapes.groupby(shape_i_columns)[['x', 'y']]
+    xy_min = xy_groups.agg('min')
+    xy_max = xy_groups.agg('max')
+
+    shapes = (xy_max - xy_min).rename(columns={'x': 'width', 'y': 'height'})
+    return xy_min.join(shapes)
+
+
+def get_shape_infos(df_shapes, shape_i_columns):
+    '''
+    Return a `pandas.DataFrame` indexed by `shape_i_columns` (i.e., each row
+    corresponds to a single shape/polygon), containing the following columns:
+
+     - `area`: The area of the shape.
+     - `width`: The width of the widest part of the shape.
+     - `height`: The height of the tallest part of the shape.
+    '''
+    shape_areas = get_shape_areas(df_shapes, shape_i_columns)
+    bboxes = get_bounding_boxes(df_shapes, shape_i_columns)
+    return bboxes.join(pd.DataFrame(shape_areas))
+
+
+def get_bounding_box(df_points):
+    '''
+    Calculate the bounding box of all points in a data frame.
+    '''
+    xy_min = df_points[['x', 'y']].min()
+    xy_max = df_points[['x', 'y']].max()
+
+    wh = xy_max - xy_min
+    wh.index = 'width', 'height'
+    bbox = pd.concat([xy_min, wh])
+    bbox.name = 'bounding_box'
+    return bbox
 
 
 def close_paths(df_svg):
@@ -52,65 +112,37 @@ def get_nearest_neighbours(path_centers):
     return nearest_neighbors
 
 
-def get_path_areas(df_svg, signed=False):
-    '''
-    Return a `pandas.Series` indexed by `path_id`, containing the signed area
-    corresponding to each path.  A positive area value corresponds to a clockwise
-    loop, whereas a negative area value corresponds to a counter-clockwise loop.
-    '''
-    # Make a copy of the SVG data frame since we need to add columns to it.
-    df_i = df_svg.copy()
-    df_i['vertex_count'] = df_i.groupby('path_id')['x'].transform('count')
-    df_i['area_a'] = df_i.x
-    df_i['area_b'] = df_i.y
-
-    # Vector form of [Shoelace formula][1].
-    #
-    # [1]: http://en.wikipedia.org/wiki/Shoelace_formula
-    df_i.loc[df_i.vertex_i == df_i.vertex_count - 1, 'area_a'] *= df_i.loc[df_i.vertex_i == 0, 'y'].values
-    df_i.loc[df_i.vertex_i < df_i.vertex_count - 1, 'area_a'] *= df_i.loc[df_i.vertex_i > 0, 'y'].values
-
-    df_i.loc[df_i.vertex_i == df_i.vertex_count - 1, 'area_b'] *= df_i.loc[df_i.vertex_i == 0, 'x'].values
-    df_i.loc[df_i.vertex_i < df_i.vertex_count - 1, 'area_b'] *= df_i.loc[df_i.vertex_i > 0, 'x'].values
-
-    area_components = df_i.groupby('path_id')[['area_a', 'area_b']].sum()
-    path_areas = .5 * (area_components['area_b'] - area_components['area_a'])
-
-    if not signed:
-        path_areas.name = 'area'
-        return path_areas.abs()
-    else:
-        path_areas.name = 'signed_area'
-        return path_areas
+# ## Deprecated ##
+def get_svg_path_frame(svg_path):
+    warnings.warn('get_svg_path_frame function is deprecated.  Use '
+                  '`svg_model.svg_polygons_to_df`')
+    frames = []
+    for i, loop_i in enumerate(svg_path.loops):
+        verts = pd.DataFrame(loop_i.verts, columns=['x', 'y'])
+        verts.insert(0, 'vertex_i', np.arange(verts.shape[0], dtype=int))
+        verts.insert(0, 'loop_i', i)
+        frames.append(verts)
+    return pd.concat(frames)
 
 
-def get_bounding_boxes(df_svg):
-    xy_groups = df_svg.groupby('path_id')[['x', 'y']]
-    xy_min = xy_groups.agg('min')
-    xy_max = xy_groups.agg('max')
-
-    shapes = (xy_max - xy_min).rename(columns={'x': 'width', 'y': 'height'})
-    return xy_min.join(shapes)
-
-
-def get_path_infos(df_svg):
-    path_areas = get_path_areas(df_svg)
-    bboxes = get_bounding_boxes(df_svg)
-    return bboxes.join(pd.DataFrame(path_areas))
-
-
-def get_bounding_box(df_svg):
-    xy_min = df_svg[['x', 'y']].min()
-    xy_max = df_svg[['x', 'y']].max()
-
-    wh = xy_max - xy_min
-    wh.index = 'width', 'height'
-    bbox = pd.concat([xy_min, wh])
-    bbox.name = 'bounding_box'
-    return bbox
+# ## Deprecated ##
+def get_svg_frame(svg_filepath):
+    warnings.warn('get_svg_frame function is deprecated.  Use '
+                  '`svg_model.svg_polygons_to_df`')
+    parser = svg_parser.SvgParser()
+    svg = parser.parse_file(svg_filepath, lambda *args: None)
+    frames = []
+    for k, p in svg.paths.iteritems():
+        svg_frame = get_svg_path_frame(p)
+        svg_frame.insert(0, 'path_id', k)
+        frames.append(svg_frame)
+    return pd.concat(frames).reset_index(drop=True)
 
 
+# ## Deprecated ##
 def triangulate_svg_frame(svg_frame):
+    warnings.warn('triangulate_svg_frame function is deprecated.  Use '
+                  '`svg_model.tesselate.tesselate_shapes_frame`')
     from .seidel import Triangulator
 
     triangle_frames = []
