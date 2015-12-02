@@ -31,7 +31,7 @@ def get_shapes_pymunk_space(df_convex_shapes, shape_i_columns):
             shape_i = [shape_i]
 
         body = pm.Body()
-        space.add_static(pm.Poly(body, df_i[['x', 'y']].values))
+        space.add(pm.Poly(body, df_i[['x', 'y']].values))
         bodies.append([body, shape_i[0]])
 
     return space, (pd.DataFrame(bodies, columns=['body',
