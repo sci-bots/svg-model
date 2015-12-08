@@ -38,11 +38,10 @@ def svg_polygons_to_df(svg_source, xpath='svg:polygon', namespaces=None):
     frames = []
 
     for polygon_i in e_root.xpath(xpath, namespaces=NSMAP):
-        frame = (pd.DataFrame([map(float, v.split(','))
-                               for v in polygon_i.attrib['points'].strip()
-                               .split(' ')],
-                              columns=['x', 'y']).reset_index()
-                 .rename(columns={'index': 'vertex_i'}))
+        points_i = [[polygon_i.attrib['id'], i] + map(float, v.split(','))
+                    for i, v in enumerate(polygon_i.attrib['points']
+                                          .strip().split(' '))]
+        frames.extend(points_i)
         # # TODO #
         # Add support for:
         #
@@ -50,9 +49,7 @@ def svg_polygons_to_df(svg_source, xpath='svg:polygon', namespaces=None):
         #  - transform: matrix, scale, etc.
         #      * **N.B.,** This is necessary to map to x,y coords to actual
         #        scale and position.
-        frame.insert(0, 'path_id', polygon_i.attrib['id'])
-        frames.append(frame)
-    return pd.concat(frames).reset_index(drop=True)
+    return pd.DataFrame(frames, columns=['path_id', 'vertex_i', 'x', 'y'])
 
 
 def compute_shape_centers(df_shapes, shape_i_columns, inplace=False):
