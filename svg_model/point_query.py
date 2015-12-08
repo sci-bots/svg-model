@@ -1,4 +1,5 @@
 # coding: utf-8
+import itertools
 import types
 
 import pandas as pd
@@ -31,7 +32,11 @@ def get_shapes_pymunk_space(df_convex_shapes, shape_i_columns):
             shape_i = [shape_i]
 
         body = pm.Body()
-        space.add(pm.Poly(body, df_i[['x', 'y']].values))
+        # Using the code below is about 66% faster than:
+        #     `df_i[['x', 'y']].values`.
+        points = [[x, y] for x, y in itertools.izip(df_i.x, df_i.y)]
+        poly = pm.Poly(body, points)
+        space.add(poly)
         bodies.append([body, shape_i[0]])
 
     return space, (pd.DataFrame(bodies, columns=['body',
