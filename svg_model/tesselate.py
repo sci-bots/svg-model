@@ -27,12 +27,8 @@ def tesselate_shapes_frame(df_shapes, shape_i_columns):
             shape_i = [shape_i]
 
         for i, triangle_i in enumerate(triangulator.triangles()):
-            frame = pd.DataFrame(triangle_i, columns=['x', 'y']).reset_index()
-            frame.rename(columns={'index': 'vertex_i'}, inplace=True)
-            frame.insert(0, 'triangle_i', i)
-
-            for i in xrange(len(shape_i_columns)):
-                frame.insert(i, shape_i_columns[i], shape_i[i])
-            frames.append(frame)
-
-    return pd.concat(frames).reset_index(drop=True)
+            triangle_points_i = [shape_i + [i] + [j, x, y]
+                                 for j, (x, y) in enumerate(triangle_i)]
+            frames.extend(triangle_points_i)
+    return pd.DataFrame(frames, columns=shape_i_columns +
+                        ['triangle_i', 'vertex_i', 'x', 'y'])
