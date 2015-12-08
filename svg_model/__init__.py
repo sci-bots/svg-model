@@ -4,6 +4,11 @@ import pint  # Unit conversion from inches to mm
 from .data_frame import get_shape_infos
 
 
+XHTML_NAMESPACE = "http://www.w3.org/2000/svg"
+NSMAP = {'svg' : XHTML_NAMESPACE}
+INKSCAPE_NSMAP = NSMAP.copy()
+INKSCAPE_NSMAP['inkscape'] = 'http://www.inkscape.org/namespaces/inkscape'
+
 # Convert Inkscape pixels-per-inch (PPI) to pixels-per-mm (PPmm).
 ureg = pint.UnitRegistry()
 
@@ -11,7 +16,7 @@ INKSCAPE_PPI = 90
 INKSCAPE_PPmm = INKSCAPE_PPI / ureg.inch.to('mm')
 
 
-def svg_polygons_to_df(svg_source, xpath='svg:polygon', namespaces=None):
+def svg_polygons_to_df(svg_source, xpath='//svg:polygon', namespaces=None):
     '''
     Return a `pandas.DataFrame` with one row per vertex for all polygons in
     `svg_source`, with the following columns:
@@ -27,9 +32,6 @@ def svg_polygons_to_df(svg_source, xpath='svg:polygon', namespaces=None):
      - `svg_source`: A file path, URI, or file-like object.
     '''
     from lxml import etree
-
-    XHTML_NAMESPACE = "http://www.w3.org/2000/svg"
-    NSMAP = {'svg' : XHTML_NAMESPACE}  # map default namespace to prefix 'svg:'
 
     if namespaces is None:
         namespaces = NSMAP
