@@ -1,9 +1,13 @@
 # coding: utf-8
 # Copyright 2015
 # Jerry Zhou <jerryzhou@hotmail.ca> and Christian Fobel <christian@fobel.net>
+import warnings
+
 import pandas as pd
 import numpy as np
-from . import NSMAP
+
+from . import INKSCAPE_NSMAP
+from .draw import draw_lines_svg_layer as _draw_lines_svg_layer
 
 
 def extend_shapes(df_shapes, axis, distance):
@@ -19,7 +23,7 @@ def extend_shapes(df_shapes, axis, distance):
     return df_shapes_i
 
 
-def extract_adjacent_shapes(df_shapes, extend=.5):
+def extract_adjacent_shapes(df_shapes, shape_i_column, extend=.5):
     '''
     Generate list of connections between "adjacent" polygon shapes based on
     geometrical "closeness".
@@ -37,19 +41,21 @@ def extract_adjacent_shapes(df_shapes, extend=.5):
     # Extend y coords by abs units
     df_scaled_y = extend_shapes(df_shapes, 'y', extend)
 
-    df_corners = df_shapes.groupby('path_id').agg({'x': ['min', 'max'],
-                                                    'y': ['min', 'max'], })
+    df_corners = df_shapes.groupby(shape_i_column).agg({'x': ['min', 'max'],
+                                                        'y': ['min', 'max']})
 
     # Find adjacent electrodes
     row_list = []
 
-    for shapeNumber in df_shapes['path_id'].drop_duplicates():
-        df_stretched = df_scaled_x[df_scaled_x.path_id.isin([shapeNumber])]
+    for shapeNumber in df_shapes[shape_i_column].drop_duplicates():
+        df_stretched = df_scaled_x[df_scaled_x[shape_i_column]
+                                   .isin([shapeNumber])]
         xmin_x, xmax_x, ymin_x, ymax_x = (df_stretched.x.min(),
                                           df_stretched.x.max(),
                                           df_stretched.y.min(),
                                           df_stretched.y.max())
-        df_stretched = df_scaled_y[df_scaled_y.path_id.isin([shapeNumber])]
+        df_stretched = df_scaled_y[df_scaled_y[shape_i_column]
+                                   .isin([shapeNumber])]
         xmin_y, xmax_y, ymin_y, ymax_y = (df_stretched.x.min(),
                                           df_stretched.x.max(),
                                           df_stretched.y.min(),
@@ -135,13 +141,8 @@ def extract_connections(svg_source, shapes_canvas, line_layer='Connections',
     '''
     from lxml import etree
 
-    XHTML_NAMESPACE = "http://www.w3.org/2000/svg"
-    NSMAP = {'svg' : XHTML_NAMESPACE,
-             'inkscape':
-             'http://www.inkscape.org/namespaces/inkscape'}
-
     if namespaces is None:
-        namespaces = NSMAP
+        namespaces = INKSCAPE_NSMAP
 
     e_root = etree.parse(svg_source)
     frames = []
@@ -157,6 +158,9 @@ def extract_connections(svg_source, shapes_canvas, line_layer='Connections',
                   [float(line_i_dict[k]) for k in coords_columns])
         frames.append(values)
 
+    if not frames:
+        return pd.DataFrame(None, columns=['source', 'target'])
+
     df_connection_lines = pd.DataFrame(frames, columns=['id'] + coords_columns)
 
     df_shape_connections_i = pd.DataFrame([[shapes_canvas.find_shape(x1, y1),
@@ -170,54 +174,6 @@ def extract_connections(svg_source, shapes_canvas, line_layer='Connections',
     return df_shape_connections_i.dropna()
 
 
-def draw_lines_svg_layer(df_endpoints, connections_layer='Connections'):
-    '''
-    Draw lines defined by endpoint coordinates as a layer in a SVG file.
-
-    Args:
-
-        df_endpoints (pandas.DataFrame) : Each row corresponds to the endpoints
-            of a single line, encoded through the columns: `x_source`,
-            `y_source`, `x_target`, and `y_target`.
-
-    Returns:
-
-        (StringIO.StringIO) : A file-like object containing SVG XML source.
-            The XML contains a layer named `"Connections"`, which in turn
-            contains one line per row in the input `df_endpoints` table.
-    '''
-    import cStringIO as StringIO
-    import svgwrite
-
-    # Note that `svgwrite.Drawing` requires a filepath to be specified during
-    # construction, *but* nothing is actually written to the path unless one of
-    # the `save*` methods is called.
-    #
-    # In this function, we do *not* call any of the `save*` methods.  Instead,
-    # we use the `write` method to write to an in-memory file-like object.
-    dwg = svgwrite.Drawing('should_not_exist.svg', profile='tiny', debug=False)
-
-    dwg.attribs['width'] = df_endpoints[['x_source', 'x_target']].values.max()
-    dwg.attribs['height'] = df_endpoints[['y_source', 'y_target']].values.max()
-
-    nsmap = NSMAP.copy()
-    nsmap['inkscape'] = 'http://www.inkscape.org/namespaces/inkscape'
-
-    dwg.attribs['xmlns:inkscape'] = nsmap['inkscape']
-
-    coord_columns = ['x_source', 'y_source', 'x_target', 'y_target']
-
-    line_layer = dwg.g(id='layer1', **{'inkscape:label': connections_layer,
-                                       'inkscape:groupmode': 'layer'})
-
-    for i, (x1, y1, x2, y2) in df_endpoints[coord_columns].iterrows():
-        line_i = dwg.line((x1, y1), (x2, y2), id='line%d' % i,
-                          style='stroke:#000000')
-        line_layer.add(line_i)
-    dwg.add(line_layer)
-
-    output = StringIO.StringIO()
-    dwg.write(output)
-    # Rewind file.
-    output.seek(0)
-    return output
+def draw_lines_svg_layer(df_endpoints, layer_name='Connections'):
+    warnings.warn('`draw_lines_svg_layer` has been moved to `svg_model.draw`')
+    return _draw_lines_svg_layer(df_endpoints, layer_name=layer_name)

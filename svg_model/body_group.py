@@ -47,7 +47,7 @@ class BodyGroup(object):
             triangles = triangulator.triangles()
             for triangle in triangles:
                 shape = pm.Poly(body, triangle)
-                self.space.add_static(shape)
+                self.space.add(shape)
         self.bodies[name] = body
         self.reverse_bodies[body] = name
 

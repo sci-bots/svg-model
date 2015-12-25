@@ -1,4 +1,8 @@
 # coding: utf-8
+import re
+import types
+import warnings
+
 import pandas as pd
 import pint  # Unit conversion from inches to mm
 from .data_frame import get_shape_infos
@@ -14,6 +18,85 @@ ureg = pint.UnitRegistry()
 
 INKSCAPE_PPI = 90
 INKSCAPE_PPmm = INKSCAPE_PPI / ureg.inch.to('mm')
+
+cre_path_command = re.compile(r'(?P<command>[MLZ])\s+(?P<x>\d+(\.\d+)?),\s*(?P<y>\d+(\.\d+)?)\s*')
+
+
+def svg_shapes_to_df(svg_source, xpath='//svg:path | //svg:polygon',
+                     namespaces=None):
+    '''
+    Return a `pandas.DataFrame` with one row per vertex for all shapes (either
+    `svg:path` or `svg:polygon`) in `svg_source`, with the following columns:
+
+     - `path_id`: The `id` attribute of the corresponding shape.
+     - `vertex_i`: The index of the vertex within the corresponding shape.
+     - `x`: The x-coordinate of the vertex.
+     - `y`: The y-coordinate of the vertex.
+
+    Arguments
+    ---------
+
+     - `svg_source`: A file path, URI, or file-like object.
+    '''
+    from lxml import etree
+
+    if namespaces is None:
+        namespaces = INKSCAPE_NSMAP
+
+    e_root = etree.parse(svg_source)
+    frames = []
+    attribs_set = set()
+
+    # Get list of attributes that are set in any of the shapes (not including
+    # the `svg:path` `"d"` attribute or the `svg:polygon` `"points"`
+    # attribute).
+    #
+    # This, for example, collects attributes such as:
+    #
+    #  - `fill`, `stroke` (as part of `"style"` attribute)
+    #  - `"transform"`: matrix, scale, etc.
+    for shape_i in e_root.xpath(xpath, namespaces=namespaces):
+        attribs_set.update(shape_i.attrib.keys())
+
+    for k in ('d', 'points'):
+        if k in attribs_set:
+            attribs_set.remove(k)
+
+    attribs = list(attribs_set)
+
+    # Always add 'id' attribute as first attribute.
+    if 'id' in attribs:
+        attribs.remove('id')
+    attribs.insert(0, 'id')
+
+    for shape_i in e_root.xpath(xpath, namespaces=namespaces):
+        # Gather shape attributes from SVG element.
+        base_fields = [shape_i.attrib.get(k, None) for k in attribs]
+
+        if shape_i.tag == '{http://www.w3.org/2000/svg}path':
+            # Decode `svg:path` vertices from [`"d"`][1] attribute.
+            #
+            # [1]: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/d
+            points_i = [base_fields + [i] +
+                        map(float, [m.group(v) for v in 'xy'])
+                        for i, m in enumerate(cre_path_command
+                                              .finditer(shape_i.attrib['d']))]
+        elif shape_i.tag == '{http://www.w3.org/2000/svg}polygon':
+            # Decode `svg:polygon` vertices from [`"points"`][2] attribute.
+            #
+            # [2]: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/points
+            points_i = [base_fields + [i] + map(float, v.split(','))
+                        for i, v in enumerate(shape_i.attrib['points']
+                                              .strip().split(' '))]
+        else:
+            warnings.warning('Unsupported shape tag type: %s' % shape_i.tag)
+            continue
+        frames.extend(points_i)
+    if not frames:
+        # There were no shapes found, so set `frames` list to `None` to allow
+        # an empty data frame to be created.
+        frames = None
+    return pd.DataFrame(frames, columns=attribs + ['vertex_i', 'x', 'y'])
 
 
 def svg_polygons_to_df(svg_source, xpath='//svg:polygon', namespaces=None):
@@ -31,52 +114,45 @@ def svg_polygons_to_df(svg_source, xpath='//svg:polygon', namespaces=None):
 
      - `svg_source`: A file path, URI, or file-like object.
     '''
-    from lxml import etree
-
-    if namespaces is None:
-        namespaces = NSMAP
-
-    e_root = etree.parse(svg_source)
-    frames = []
-
-    for polygon_i in e_root.xpath(xpath, namespaces=NSMAP):
-        points_i = [[polygon_i.attrib['id'], i] + map(float, v.split(','))
-                    for i, v in enumerate(polygon_i.attrib['points']
-                                          .strip().split(' '))]
-        frames.extend(points_i)
-        # # TODO #
-        # Add support for:
-        #
-        #  - fill, stroke
-        #  - transform: matrix, scale, etc.
-        #      * **N.B.,** This is necessary to map to x,y coords to actual
-        #        scale and position.
-    return pd.DataFrame(frames, columns=['path_id', 'vertex_i', 'x', 'y'])
+    warnings.warn("The `svg_polygons_to_df` function is deprecated.  Use "
+                  "`svg_shapes_to_df` instead.")
+    result = svg_shapes_to_df(svg_source, xpath=xpath, namespaces=namespaces)
+    return result[['id', 'vertex_i', 'x', 'y']].rename(columns={'id':
+                                                                'path_id'})
 
 
-def compute_shape_centers(df_shapes, shape_i_columns, inplace=False):
+def compute_shape_centers(df_shapes, shape_i_column, inplace=False):
     '''
     Compute the center point of each polygon shape, and the offset of each
     vertex to the corresponding polygon center point.
 
-    Arguments
-    ---------
+    Args:
 
-     - `df_shapes`: Table of polygon shape vertices (one row per vertex).
-         * Table rows with the same value in the `path_id` column are grouped
-           together as a polygon.
+        df_shapes (pandas.DataFrame) : Table of polygon shape vertices (one row
+            per vertex).
+        shape_i_column (str) : Table rows with the same value in the
+            `shape_i_column` column are grouped together as a shape.
+        in_place (bool) : If `True`, center coordinate columns are added to the
+            input frame. Otherwise, center coordinate columns are added to copy
+            of the input frame.
     '''
+    if not isinstance(shape_i_column, types.StringType):
+        raise KeyError('Shape index must be a single column.')
+
     if not inplace:
         df_shapes = df_shapes.copy()
 
     # Get coordinates of center of each path.
-    df_shapes_info = get_shape_infos(df_shapes, shape_i_columns)
-    path_centers = df_shapes_info[['x', 'y']] + .5 * df_shapes_info[['width', 'height']].values
-    df_shapes['x_center'] = path_centers.x[df_shapes.path_id].values
-    df_shapes['y_center'] = path_centers.y[df_shapes.path_id].values
+    df_shapes_info = get_shape_infos(df_shapes, shape_i_column)
+    path_centers = (df_shapes_info[['x', 'y']] +
+                    .5 * df_shapes_info[['width', 'height']].values)
+    df_shapes['x_center'] = path_centers.x[df_shapes[shape_i_column]].values
+    df_shapes['y_center'] = path_centers.y[df_shapes[shape_i_column]].values
 
-    # Calculate coordinate of each path vertex relative to center point of path.
-    center_offset = df_shapes[['x', 'y']] - df_shapes[['x_center', 'y_center']].values
+    # Calculate coordinate of each path vertex relative to center point of
+    # path.
+    center_offset = (df_shapes[['x', 'y']] -
+                     df_shapes[['x_center', 'y_center']].values)
     return df_shapes.join(center_offset, rsuffix='_center_offset')
 
 
