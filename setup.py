@@ -14,5 +14,7 @@ setup(name='svg_model',
       author_email='christian@fobel.net',
       url='http://github.com/cfobel/svg_model.git',
       license='GPL',
-      install_requires=['numpy', 'pandas', 'pymunk>=4.0.0'],
-      packages=['svg_model', 'svg_model.svgload'])
+      install_requires=['numpy', 'pandas', 'pint', 'pymunk>=4.0.0'],
+      packages=['svg_model'],
+      # Install data listed in `MANIFEST.in`
+      include_package_data=True)
