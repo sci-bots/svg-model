@@ -30,5 +30,6 @@ def tesselate_shapes_frame(df_shapes, shape_i_columns):
             triangle_points_i = [shape_i + [i] + [j, x, y]
                                  for j, (x, y) in enumerate(triangle_i)]
             frames.extend(triangle_points_i)
+    frames = None if not frames else frames
     return pd.DataFrame(frames, columns=shape_i_columns +
                         ['triangle_i', 'vertex_i', 'x', 'y'])
