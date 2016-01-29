@@ -1,6 +1,7 @@
 # coding: utf-8
 import types
 
+import numpy as np
 import pandas as pd
 from . import (svg_polygons_to_df, fit_points_in_bounding_box,
                fit_points_in_bounding_box_params)
@@ -48,13 +49,22 @@ class ShapesCanvas(object):
                                                            padding_fraction=
                                                            padding_fraction)
 
-        # Get x/y-offset and scale for later use
+        # Compute shape (i.e., width and height) of bounding box for each
+        # canvas shape.
+        df_bounding_coords = (self.df_canvas_shapes.groupby('id')[['x', 'y']]
+                              .agg(['min', 'max']))
+        bounding_width = df_bounding_coords.x['max'] - df_bounding_coords.x['min']
+        bounding_height = df_bounding_coords.y['max'] - df_bounding_coords.y['min']
+        self.df_bounding_shapes = pd.DataFrame(np.column_stack([bounding_width,
+                                                                bounding_height]),
+                                               columns=['width', 'height'],
+                                               index=df_bounding_coords.index)
+
+        # Get x/y-offset and scale for later use.
         self.canvas_offset, self.canvas_scale = \
             fit_points_in_bounding_box_params(df_shapes, canvas_shape,
                                               padding_fraction=
                                               padding_fraction)
-
-        # Tesselate *scaled* shapes into convex shapes and construct pymunk `Space`
 
         # Tesselate electrode polygons into convex shapes (triangles), for
         # compatability with `pymunk`.
@@ -62,7 +72,8 @@ class ShapesCanvas(object):
             tesselate_shapes_frame(self.df_canvas_shapes, shape_i_columns)
 
         # Create `pymunk` space and add a body for each convex shape.  Each
-        # body is mapped to the original `path_id` through `electrode_bodies`.
+        # body is mapped to the original shape identifier through
+        # `canvas_bodies`.
         self.canvas_space, self.canvas_bodies = \
             get_shapes_pymunk_space(self.df_canvas_tesselations,
                                     shape_i_columns + ['triangle_i'])
