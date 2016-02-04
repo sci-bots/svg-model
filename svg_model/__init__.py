@@ -5,7 +5,7 @@ import warnings
 
 import pandas as pd
 import pint  # Unit conversion from inches to mm
-from .data_frame import get_shape_infos
+from .data_frame import get_shape_infos, get_bounding_boxes
 
 
 XHTML_NAMESPACE = "http://www.w3.org/2000/svg"
@@ -143,7 +143,8 @@ def compute_shape_centers(df_shapes, shape_i_column, inplace=False):
         df_shapes = df_shapes.copy()
 
     # Get coordinates of center of each path.
-    df_shapes_info = get_shape_infos(df_shapes, shape_i_column)
+    #df_shapes_info = get_shape_infos(df_shapes, shape_i_column)
+    df_shapes_info = get_bounding_boxes(df_shapes, shape_i_column)
     path_centers = (df_shapes_info[['x', 'y']] +
                     .5 * df_shapes_info[['width', 'height']].values)
     df_shapes['x_center'] = path_centers.x[df_shapes[shape_i_column]].values
@@ -168,10 +169,12 @@ def scale_points(df_points, scale=INKSCAPE_PPmm.magnitude, inplace=False):
         df_points = df_points.copy()
 
     # Offset device, such that all coordinates are >= 0.
-    df_points[['x', 'y']] -= df_points[['x', 'y']].min()
+    df_points.x -= df_points.x.min()
+    df_points.y -= df_points.y.min()
 
     # Scale path coordinates.
-    df_points[['x', 'y']] /= scale
+    df_points.x /= scale
+    df_points.y /= scale
 
     return df_points
 
@@ -238,7 +241,8 @@ def fit_points_in_bounding_box_params(df_points, bounding_box,
        `height`.
      - `padding_fraction`: Fraction of padding to add around points.
     '''
-    width, height = df_points[['x', 'y']].max()
+    width = df_points.x.max()
+    height = df_points.y.max()
 
     points_bbox = pd.Series([width, height], index=['width', 'height'])
     fill_scale = 1 - 2 * padding_fraction
