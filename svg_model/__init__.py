@@ -143,10 +143,9 @@ def compute_shape_centers(df_shapes, shape_i_column, inplace=False):
         df_shapes = df_shapes.copy()
 
     # Get coordinates of center of each path.
-    #df_shapes_info = get_shape_infos(df_shapes, shape_i_column)
-    df_shapes_info = get_bounding_boxes(df_shapes, shape_i_column)
-    path_centers = (df_shapes_info[['x', 'y']] +
-                    .5 * df_shapes_info[['width', 'height']].values)
+    df_bounding_boxes = get_bounding_boxes(df_shapes, shape_i_column)
+    path_centers = (df_bounding_boxes[['x', 'y']] + .5 *
+                    df_bounding_boxes[['width', 'height']].values)
     df_shapes['x_center'] = path_centers.x[df_shapes[shape_i_column]].values
     df_shapes['y_center'] = path_centers.y[df_shapes[shape_i_column]].values
 
