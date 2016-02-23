@@ -5,7 +5,7 @@ import warnings
 
 import pandas as pd
 import pint  # Unit conversion from inches to mm
-from .data_frame import get_shape_infos, get_bounding_boxes
+from .data_frame import get_bounding_boxes
 
 
 XHTML_NAMESPACE = "http://www.w3.org/2000/svg"
@@ -19,7 +19,9 @@ ureg = pint.UnitRegistry()
 INKSCAPE_PPI = 90
 INKSCAPE_PPmm = INKSCAPE_PPI / ureg.inch.to('mm')
 
-cre_path_command = re.compile(r'(?P<command>[MLZ])\s+(?P<x>\d+(\.\d+)?),\s*(?P<y>\d+(\.\d+)?)\s*')
+float_pattern = r'[+-]?\d+(\.\d+)?([eE][+-]?\d+)?'  # 2, 1.23, 23e39, 1.23e-6, etc.
+cre_path_command = re.compile(r'(?P<command>[MLZ])\s+(?P<x>%s),\s*(?P<y>%s)\s*'
+                              % (float_pattern, float_pattern))
 
 
 def svg_shapes_to_df(svg_source, xpath='//svg:path | //svg:polygon',
