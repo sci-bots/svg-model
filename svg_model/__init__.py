@@ -17,7 +17,7 @@ INKSCAPE_NSMAP['inkscape'] = 'http://www.inkscape.org/namespaces/inkscape'
 ureg = pint.UnitRegistry()
 
 INKSCAPE_PPI = 90
-INKSCAPE_PPmm = INKSCAPE_PPI / ureg.inch.to('mm')
+INKSCAPE_PPmm = INKSCAPE_PPI / (1 * ureg.inch).to('mm')
 
 float_pattern = r'[+-]?\d+(\.\d+)?([eE][+-]?\d+)?'  # 2, 1.23, 23e39, 1.23e-6, etc.
 cre_path_command = re.compile(r'(?P<command>[MLZ])\s+(?P<x>%s),\s*(?P<y>%s)\s*'
