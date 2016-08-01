@@ -31,7 +31,14 @@ def get_shapes_pymunk_space(df_convex_shapes, shape_i_columns):
         if not isinstance(shape_i, (types.ListType, types.TupleType)):
             shape_i = [shape_i]
 
-        body = pm.Body()
+        if hasattr(pm.Body, 'STATIC'):
+            # Assume `pymunk>=5.0`, where static bodies must be declared
+            # explicitly.
+            body = pm.Body(body_type=pm.Body.STATIC)
+        else:
+            # Assume `pymunk<5.0`, where bodies are static unless otherwise
+            # specified.
+            body = pm.Body()
         # Using the code below is about 66% faster than:
         #     `df_i[['x', 'y']].values`.
         points = [[x, y] for x, y in itertools.izip(df_i.x, df_i.y)]

@@ -3,6 +3,8 @@ import types
 
 import numpy as np
 import pandas as pd
+import pymunk
+
 from . import (svg_polygons_to_df, fit_points_in_bounding_box,
                fit_points_in_bounding_box_params)
 from .tesselate import tesselate_shapes_frame
@@ -114,7 +116,17 @@ class ShapesCanvas(object):
         shape_x, shape_y, w = self.canvas_to_shapes_transform.dot([canvas_x,
                                                                    canvas_y,
                                                                    1])
-        shape = self.space.point_query_first((shape_x, shape_y))
+        if hasattr(self.space, 'point_query_first'):
+            # Assume `pymunk<5.0`.
+            shape = self.space.point_query_first((shape_x, shape_y))
+        else:
+            # Assume `pymunk>=5.0`, where `point_query_first` method has been
+            # deprecated.
+            info = self.space.point_query_nearest((shape_x, shape_y), 0,
+                                                  [pymunk.ShapeFilter
+                                                   .ALL_CATEGORIES])
+            shape = info.shape if info else None
+
         if shape:
             return self.bodies[shape.body]
         return None
