@@ -1,6 +1,7 @@
-A Python module for parsing an SVG file to a group of paths.
-Also, given a group of paths, one can construct a group of pymunk bodies to
-interact with the paths.
+A Python module for performing various operations and transformations to the
+contents of SVG files.
 
-Derived from the geometry code of (see LICENSE and files for details):
-    http://code.google.com/p/sole-scion/
+Documentation is hosted on [Read the Docs][1].
+
+
+[1]: svg-model.readthedocs.org
