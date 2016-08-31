@@ -25,7 +25,7 @@ cre_path_command = re.compile(r'(?P<command>[MLZ])\s+(?P<x>%s),\s*(?P<y>%s)\s*'
 
 
 def svg_shapes_to_df(svg_source, xpath='//svg:path | //svg:polygon',
-                     namespaces=None):
+                     namespaces=INKSCAPE_NSMAP):
     '''
     Return a `pandas.DataFrame` with one row per vertex for all shapes (either
     `svg:path` or `svg:polygon`) in `svg_source`, with the following columns:
@@ -41,9 +41,6 @@ def svg_shapes_to_df(svg_source, xpath='//svg:path | //svg:polygon',
      - `svg_source`: A file path, URI, or file-like object.
     '''
     from lxml import etree
-
-    if namespaces is None:
-        namespaces = INKSCAPE_NSMAP
 
     e_root = etree.parse(svg_source)
     frames = []
@@ -101,7 +98,8 @@ def svg_shapes_to_df(svg_source, xpath='//svg:path | //svg:polygon',
     return pd.DataFrame(frames, columns=attribs + ['vertex_i', 'x', 'y'])
 
 
-def svg_polygons_to_df(svg_source, xpath='//svg:polygon', namespaces=None):
+def svg_polygons_to_df(svg_source, xpath='//svg:polygon',
+                       namespaces=INKSCAPE_NSMAP):
     '''
     Return a `pandas.DataFrame` with one row per vertex for all polygons in
     `svg_source`, with the following columns:
