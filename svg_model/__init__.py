@@ -27,18 +27,30 @@ cre_path_command = re.compile(r'(?P<command>[MLZ])\s+(?P<x>%s),\s*(?P<y>%s)\s*'
 def svg_shapes_to_df(svg_source, xpath='//svg:path | //svg:polygon',
                      namespaces=INKSCAPE_NSMAP):
     '''
-    Return a `pandas.DataFrame` with one row per vertex for all shapes (either
-    `svg:path` or `svg:polygon`) in `svg_source`, with the following columns:
-
-     - `path_id`: The `id` attribute of the corresponding shape.
-     - `vertex_i`: The index of the vertex within the corresponding shape.
-     - `x`: The x-coordinate of the vertex.
-     - `y`: The y-coordinate of the vertex.
+    Construct a data frame with one row per vertex for all shapes in
+    :data:`svg_source``.
 
     Arguments
     ---------
+    svg_source : str or file-like
+        A file path, URI, or file-like object.
+    xpath : str, optional
+        XPath path expression to select shape nodes.
 
-     - `svg_source`: A file path, URI, or file-like object.
+        By default, all ``svg:path`` and ``svg:polygon`` elements are selected.
+    namespaces : dict, optional
+        Key/value mapping of XML namespaces.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Frame with one row per vertex for all shapes in :data:`svg_source`,
+        with the following columns:
+         - ``path_id``: The ``id`` attribute of the corresponding shape.
+         - ``vertex_i``: The index of the vertex within the corresponding
+           shape.
+         - ``x``: The x-coordinate of the vertex.
+         - ``y``: The y-coordinate of the vertex.
     '''
     from lxml import etree
 
@@ -101,18 +113,34 @@ def svg_shapes_to_df(svg_source, xpath='//svg:path | //svg:polygon',
 def svg_polygons_to_df(svg_source, xpath='//svg:polygon',
                        namespaces=INKSCAPE_NSMAP):
     '''
-    Return a `pandas.DataFrame` with one row per vertex for all polygons in
-    `svg_source`, with the following columns:
-
-     - `path_id`: The `id` attribute of the corresponding polygon.
-     - `vertex_i`: The index of the vertex within the corresponding polygon.
-     - `x`: The x-coordinate of the vertex.
-     - `y`: The y-coordinate of the vertex.
+    Construct a data frame with one row per vertex for all shapes (e.g.,
+    ``svg:path``, ``svg:polygon``) in :data:`svg_source``.
 
     Arguments
     ---------
+    svg_source : str or file-like
+        A file path, URI, or file-like object.
+    xpath : str, optional
+        XPath path expression to select shape nodes.
+    namespaces : dict, optional
+        Key/value mapping of XML namespaces.
 
-     - `svg_source`: A file path, URI, or file-like object.
+    Returns
+    -------
+    pandas.DataFrame
+        Frame with one row per vertex for all shapes in :data:`svg_source`,
+        with the following columns:
+         - ``path_id``: The ``id`` attribute of the corresponding shape.
+         - ``vertex_i``: The index of the vertex within the corresponding
+           shape.
+         - ``x``: The x-coordinate of the vertex.
+         - ``y``: The y-coordinate of the vertex.
+
+
+    .. note:: Deprecated in :mod:`svg_model` 0.5.post10
+        :func:`svg_polygons_to_df` will be removed in :mod:`svg_model` 1.0, it
+        is replaced by :func:`svg_shapes_to_df` because the latter is more
+        general and works with ``svg:path`` and ``svg:polygon`` elements.
     '''
     warnings.warn("The `svg_polygons_to_df` function is deprecated.  Use "
                   "`svg_shapes_to_df` instead.")
@@ -126,15 +154,33 @@ def compute_shape_centers(df_shapes, shape_i_column, inplace=False):
     Compute the center point of each polygon shape, and the offset of each
     vertex to the corresponding polygon center point.
 
-    Args:
+    Parameters
+    ----------
+    df_shapes : pandas.DataFrame
+        Table of polygon shape vertices (one row per vertex).
 
-        df_shapes (pandas.DataFrame) : Table of polygon shape vertices (one row
-            per vertex).
-        shape_i_column (str) : Table rows with the same value in the
-            `shape_i_column` column are grouped together as a shape.
-        in_place (bool) : If `True`, center coordinate columns are added to the
-            input frame. Otherwise, center coordinate columns are added to copy
-            of the input frame.
+        Must have at least the following columns:
+         - ``vertex_i``: The index of the vertex within the corresponding
+           shape.
+         - ``x``: The x-coordinate of the vertex.
+         - ``y``: The y-coordinate of the vertex.
+    shape_i_column : str or list, optional
+        Table rows with the same value in the :data:`shape_i_column` column are
+        grouped together as a shape.
+    in_place : bool, optional
+        If ``True``, center coordinate columns are added directly to the input
+        frame.
+
+        Otherwise, center coordinate columns are added to copy of the input
+        frame.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Input frame with the following additional columns:
+         - ``x_center``/``y_center``: Absolute coordinates of shape center.
+         - ``x_center_offset``/``y_center_offset``:
+             * Coordinates of each vertex coordinate relative to shape center.
     '''
     if not isinstance(shape_i_column, types.StringType):
         raise KeyError('Shape index must be a single column.')
@@ -158,11 +204,36 @@ def compute_shape_centers(df_shapes, shape_i_column, inplace=False):
 
 def scale_points(df_points, scale=INKSCAPE_PPmm.magnitude, inplace=False):
     '''
-    Translate points such that bounding box is anchored at (0, 0) and scale `x`
-    and `y` columns of input frame by specified `scale`.
+    Translate points such that bounding box is anchored at (0, 0) and scale
+    ``x`` and ``y`` columns of input frame by specified :data:`scale`.
 
-    By default, scale to millimeters based on Inkscape default of 90
-    pixels-per-inch.
+    Parameters
+    ----------
+    df_points : pandas.DataFrame
+        Table of ``x``/``y`` point positions.
+
+        Must have at least the following columns:
+         - ``x``: x-coordinate
+         - ``y``: y-coordinate
+    scale : float, optional
+        Factor to scale points by.
+
+        By default, scale to millimeters based on Inkscape default of 90
+        pixels-per-inch.
+    scale : float, optional
+        Factor to scale points by.
+    in_place : bool, optional
+        If ``True``, input frame will be modified.
+
+        Otherwise, the scaled points are written to a new frame, leaving the
+        input frame unmodified.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Input frame with the points translated such that bounding box is
+        anchored at (0, 0) and ``x`` and ``y`` values scaled by specified
+        :data:`scale`.
     '''
     if not inplace:
         df_points = df_points.copy()
@@ -185,9 +256,14 @@ def scale_to_fit_a_in_b(a_shape, b_shape):
 
     Arguments
     ---------
+    a_shape, b_shape : pandas.Series
+        Input shapes containing numeric `width` and `height` values.
 
-     - `a_shape`: A `pandas.Series`-like object with a `width` and a `height`.
-     - `b_shape`: A `pandas.Series`-like object with a `width` and a `height`.
+    Returns
+    -------
+    float
+        Scale factor to fit :data:`a_shape` into :data:`b_shape` while
+        maintaining aspect ratio.
     '''
     # Normalize the shapes to allow comparison.
     a_shape_normal = a_shape / a_shape.max()
@@ -204,17 +280,25 @@ def scale_to_fit_a_in_b(a_shape, b_shape):
 
 def fit_points_in_bounding_box(df_points, bounding_box, padding_fraction=0):
     '''
-    Return dataframe with `x`, `y` columns scaled to fit points from
-    `df_points` to fill `bounding_box` while maintaining aspect ratio.
+    Return data frame with ``x``, ``y`` columns scaled to fit points from
+    :data:`df_points` to fill :data:`bounding_box` while maintaining aspect
+    ratio.
 
     Arguments
     ---------
+    df_points : pandas.DataFrame
+        A frame with at least the columns ``x`` and ``y``, containing one row
+        per point.
+    bounding_box: pandas.Series
+        A `pandas.Series` containing numeric `width` and `height` values.
+    padding_fraction : float
+        Fraction of padding to add around points.
 
-     - `df_points`: A `pandas.DataFrame`-like object with `x`, `y` columns,
-       containing one row per point.
-     - `bounding_box`: A `pandas.Series`-like object with a `width` and a
-       `height`.
-     - `padding_fraction`: Fraction of padding to add around points.
+    Returns
+    -------
+    pandas.DataFrame
+        Input frame with the points with ``x`` and ``y`` values scaled to fill
+        :data:`bounding_box` while maintaining aspect ratio.
     '''
     df_scaled_points = df_points.copy()
     offset, padded_scale = fit_points_in_bounding_box_params(df_points,
@@ -228,17 +312,28 @@ def fit_points_in_bounding_box(df_points, bounding_box, padding_fraction=0):
 def fit_points_in_bounding_box_params(df_points, bounding_box,
                                       padding_fraction=0):
     '''
-    Return offset and scale factor to scale `x`, `y` columns of `df_points` to
-    fill `bounding_box` while maintaining aspect ratio.
+    Return offset and scale factor to scale ``x``, ``y`` columns of
+    :data:`df_points` to fill :data:`bounding_box` while maintaining aspect
+    ratio.
 
     Arguments
     ---------
+    df_points : pandas.DataFrame
+        A frame with at least the columns ``x`` and ``y``, containing one row
+        per point.
+    bounding_box: pandas.Series
+        A `pandas.Series` containing numeric `width` and `height` values.
+    padding_fraction : float
+        Fraction of padding to add around points.
 
-     - `df_points`: A `pandas.DataFrame`-like object with `x`, `y` columns,
-       containing one row per point.
-     - `bounding_box`: A `pandas.Series`-like object with a `width` and a
-       `height`.
-     - `padding_fraction`: Fraction of padding to add around points.
+    Returns
+    -------
+    (offset, scale) : (pandas.Series, float)
+        Offset translation and scale required to fit all points in
+        :data:`df_points` to fill :data:`bounding_box` while maintaining aspect
+        ratio.
+
+        :data:`offset` contains ``x`` and ``y`` values for the offset.
     '''
     width = df_points.x.max()
     height = df_points.y.max()
@@ -257,6 +352,12 @@ def fit_points_in_bounding_box_params(df_points, bounding_box,
 
 # ## Deprecated ##
 def get_scaled_svg_frame(svg_filepath, **kwargs):
+    '''
+    .. note:: Deprecated in :mod:`svg_model` 0.5
+        :func:`get_scaled_svg_frame` was removed in :mod:`svg_model` 0.5, it is
+        replaced by :func:`svg_model.scale_points` and
+        :func:`svg_model.compute_shape_centers`.
+    '''
     raise NotImplementedError('get_scaled_svg_frame function is deprecated. '
                               'Use `svg_model.scale_points` and '
                               '`svg_model.compute_shape_centers`')

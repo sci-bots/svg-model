@@ -15,11 +15,12 @@ def get_svg_layers(svg_sources):
         svg_sources (list) : A list of file-like objects, each containing
             one or more XML layers.
 
-    Returns:
-
-        (tuple) : The first item in the tuple is the shape of the largest
-            layer, and the second item is a list of `Element` objects (from
-            `lxml.etree` module), one per SVG layer.
+    Returns
+    -------
+    (width, height), layers : (int, int), list
+        The first item in the tuple is the shape of the largest layer, and the
+        second item is a list of ``Element`` objects (from :mod:`lxml.etree`
+        module), one per SVG layer.
     '''
     layers = []
     width, height = None, None
@@ -49,8 +50,7 @@ def merge_svg_layers(svg_sources):
 
     Returns:
 
-        (cStringIO.StringIO) : File-like object containing merge XML
-            document.
+        StringIO.StringIO : File-like object containing merge XML document.
     '''
     # Get list of XML layers.
     (width, height), layers = get_svg_layers(svg_sources)

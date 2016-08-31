@@ -28,12 +28,30 @@ def extract_adjacent_shapes(df_shapes, shape_i_column, extend=.5):
     Generate list of connections between "adjacent" polygon shapes based on
     geometrical "closeness".
 
-    Arguments
-    ---------
+    Parameters
+    ----------
+    df_shapes : pandas.DataFrame
+        Table of polygon shape vertices (one row per vertex).
 
-     - `df_shapes`: Table of polygon shape vertices (one row per vertex).
-         * Table rows with the same value in the `path_id` column are grouped
-           together as a polygon.
+        Table rows with the same value in the :data:`shape_i_column` column
+        are grouped together as a polygon.
+    shape_i_column : str or list[str]
+        Column name(s) that identify the polygon each row belongs to.
+    extend : float, optional
+        Extend ``x``/``y`` coords by the specified number of absolute units
+        from the center point of each polygon.
+        Each polygon is stretched independently in the ``x`` and ``y`` direction.
+        In each direction, a polygon considered adjacent to all polygons that
+        are overlapped by the extended shape.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Adjacency list as a frame containing the columns ``source`` and
+        ``target``.
+
+        The ``source`` and ``target`` of each adjacency connection is ordered
+        such that the ``source`` is less than the ``target``.
     '''
     # Find corners of each solid shape outline.
     # Extend x coords by abs units

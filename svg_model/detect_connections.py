@@ -12,19 +12,21 @@ def auto_detect_adjacent_shapes(svg_source, shape_i_column,
                                 layer_name='Connections', shapes_xpath=None,
                                 extend=1.5):
     '''
-    Attempt to automatically find "adjacent" shapes in a SVG layer, and on a
-    second SVG layer, draw each detected connection between the center points
-    of the corresponding shapes.
+    Attempt to automatically find "adjacent" shapes in a SVG layer.
+
+    In a layer within a new SVG document, draw each detected connection between
+    the center points of the corresponding shapes.
 
     Args:
 
         svg_source (str) : Input SVG file as a filepath (or file-like object).
 
-    Returns:
-
-        (cStringIO.StringIO) : File-like object containing SVG document with
-            layer named according to `layer_name` with the detected connections
-            drawn as `svg:line` instances.
+    Returns
+    -------
+    cStringIO.StringIO
+        File-like object containing SVG document with layer named according to
+        :data:`layer_name` with the detected connections drawn as ``svg:line``
+        instances.
     '''
     if not isinstance(shape_i_column, types.StringType):
         raise KeyError('Shape index must be a single column.')
