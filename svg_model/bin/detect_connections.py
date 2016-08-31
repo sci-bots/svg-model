@@ -1,10 +1,10 @@
 # coding: utf-8
 import sys
 
-from lxml import etree
 from path_helpers import path
 
 from ..detect_connections import auto_detect_adjacent_shapes
+from ..merge import merge_svg_layers
 
 
 def parse_args(args=None):
@@ -19,7 +19,8 @@ Attempt to automatically find "adjacent" shapes in a SVG layer, and on a second
 SVG layer, draw each detected connection between the center points of the
 corresponding shapes.'''.strip())
     parser.add_argument('svg_input_file', type=path, default=None)
-    parser.add_argument('svg_output_file', type=path, default=None)
+    parser.add_argument('svg_output_file', type=path, default="-",
+                        help='Output file path ("-" for stdout)', nargs='?')
     parser.add_argument('-f', '--overwrite', action='store_true')
 
     args = parser.parse_args()
@@ -34,7 +35,12 @@ corresponding shapes.'''.strip())
 if __name__ == '__main__':
     args = parse_args()
 
-    output_xml = auto_detect_adjacent_shapes(args.svg_input_file, 'path_id')
+    connections_svg = auto_detect_adjacent_shapes(args.svg_input_file, 'id')
+    output_svg = merge_svg_layers([args.svg_input_file, connections_svg])
 
-    with open(args.svg_output_file, 'wb') as output:
-        output.write(etree.tostring(output_xml))
+    if args.svg_output_file == '-':
+        # Write to standard output stream.
+        sys.stdout.write(output_svg.getvalue())
+    else:
+        with open(args.svg_output_file, 'wb') as output:
+            output.write(output_svg.getvalue())
