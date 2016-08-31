@@ -92,7 +92,8 @@ def extract_adjacent_shapes(df_shapes, shape_i_column, extend=.5):
                 row_list.append(temp_dict)
 
     df_connected = (pd.DataFrame(row_list)[['source', 'target']]
-                    .sort(axis=1, ascending=True).sort(['source', 'target']))
+                    .sort_index(axis=1, ascending=True)
+                    .sort_values(['source', 'target']))
     return df_connected
 
 
