@@ -18,8 +18,8 @@ setup(name='svg_model',
       author_email='christian@fobel.net',
       url='http://github.com/wheeler-microfluidics/svg_model.git',
       license='LGPLv2.1',
-      install_requires=['lxml', 'numpy', 'pandas', 'pint',
-                        'pymunk>=4.0.0,<5.0'],
+      install_requires=['lxml', 'numpy', 'pandas', 'path-helpers', 'pint',
+                        'pymunk>=4.0.0,<5.0', 'svgwrite'],
       packages=['svg_model'],
       # Install data listed in `MANIFEST.in`
       include_package_data=True)

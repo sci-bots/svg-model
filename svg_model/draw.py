@@ -18,21 +18,23 @@ def draw_shapes_svg_layer(df_shapes, shape_i_columns, layer_name,
         df_shapes (pandas.DataFrame): Table of shape vertices (one row per
             vertex).
         shape_i_columns (str, list) : Either a single column name as a string
-            or a list of column names in `df_shapes`.  Rows in `df_shapes` with
-            the same value in the `shape_i_columns` column(s) are grouped
-            together as a shape.
+            or a list of column names in ``df_shapes``.  Rows in ``df_shapes``
+            with the same value in the ``shape_i_columns`` column(s) are
+            grouped together as a shape.
         layer_name (str) : Name of Inkscape layer.
-        layer_number (int) : Z-order index of Inkscape layer.
-        use_svg_path (bool) : If `True`, electrodes are drawn as `svg:path`
-            elements.  Otherwise, electrodes are drawn as `svg:polygon`
-            elements.
+        layer_number (int, optional) : Z-order index of Inkscape layer.
+        use_svg_path (bool, optional) : If ``True``, electrodes are drawn as
+            ``svg:path`` elements.  Otherwise, electrodes are drawn as
+            ``svg:polygon`` elements.
 
-    Returns:
+    Returns
+    -------
+    StringIO.StringIO
+        A file-like object containing SVG XML source.
 
-        (StringIO.StringIO) : A file-like object containing SVG XML source.
-            The XML contains a layer named according to `layer_name`, which in
-            turn contains `svg:polygon` or `svg:path` elements corresponding to
-            the shapes in the input `df_shapes` table.
+        The XML contains a layer named according to :data:`layer_name`, which
+        in turn contains ``svg:polygon`` or ``svg:path`` elements corresponding
+        to the shapes in the input :data:`df_shapes` table.
     '''
     # Note that `svgwrite.Drawing` requires a filepath to be specified during
     # construction, *but* nothing is actually written to the path unless one of
@@ -95,16 +97,18 @@ def draw_lines_svg_layer(df_endpoints, layer_name, layer_number=1):
     Args:
 
         df_endpoints (pandas.DataFrame) : Each row corresponds to the endpoints
-            of a single line, encoded through the columns: `x_source`,
-            `y_source`, `x_target`, and `y_target`.
+            of a single line, encoded through the columns: ``x_source``,
+            ``y_source``, ``x_target``, and ``y_target``.
         layer_name (str) : Name of Inkscape layer.
-        layer_number (int) : Z-order index of Inkscape layer.
+        layer_number (int, optional) : Z-order index of Inkscape layer.
 
-    Returns:
+    Returns
+    -------
+    StringIO.StringIO
+        A file-like object containing SVG XML source.
 
-        (StringIO.StringIO) : A file-like object containing SVG XML source.
-            The XML contains a layer named `"Connections"`, which in turn
-            contains one line per row in the input `df_endpoints` table.
+        The XML contains a layer named ``"Connections"``, which in turn
+        contains one line per row in the input :data:`df_endpoints` table.
     '''
     # Note that `svgwrite.Drawing` requires a filepath to be specified during
     # construction, *but* nothing is actually written to the path unless one of
