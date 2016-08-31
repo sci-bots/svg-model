@@ -4,3 +4,4 @@ pandas
 path-helpers
 pint
 pymunk>=4.0.0<5.0
+svgwrite
