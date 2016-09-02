@@ -188,7 +188,7 @@ def extract_connections(svg_source, shapes_canvas, line_layer='Connections',
                                            df_connection_lines[coords_columns]
                                            .iterrows()],
                                           columns=['source', 'target'])
-    df_shape_connections_i.sort(axis=1, inplace=True)
+    df_shape_connections_i.sort_index(axis=1, inplace=True)
     df_shape_connections_i['line_id'] = df_connection_lines['id']
     return df_shape_connections_i.dropna()
 
