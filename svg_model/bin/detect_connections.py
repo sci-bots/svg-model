@@ -3,6 +3,7 @@ import sys
 
 from path_helpers import path
 
+from .. import remove_layer
 from ..detect_connections import auto_detect_adjacent_shapes
 from ..merge import merge_svg_layers
 
@@ -36,7 +37,12 @@ if __name__ == '__main__':
     args = parse_args()
 
     connections_svg = auto_detect_adjacent_shapes(args.svg_input_file, 'id')
-    output_svg = merge_svg_layers([args.svg_input_file, connections_svg])
+
+    # Remove existing "Connections" layer and merge new "Connections" layer
+    # with original SVG.
+    output_svg = merge_svg_layers([remove_layer(args.svg_input_file,
+                                                'Connections'),
+                                   connections_svg])
 
     if args.svg_output_file == '-':
         # Write to standard output stream.
