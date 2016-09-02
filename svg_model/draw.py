@@ -17,7 +17,7 @@ def draw_shapes_svg_layer(df_shapes, shape_i_columns, layer_name,
 
         df_shapes (pandas.DataFrame): Table of shape vertices (one row per
             vertex).
-        shape_i_columns (str, list) : Either a single column name as a string
+        shape_i_columns (str or list) : Either a single column name as a string
             or a list of column names in ``df_shapes``.  Rows in ``df_shapes``
             with the same value in the ``shape_i_columns`` column(s) are
             grouped together as a shape.
