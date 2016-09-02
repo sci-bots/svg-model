@@ -1,8 +1,10 @@
 # coding: utf-8
+import cStringIO as StringIO
 import re
 import types
 import warnings
 
+import lxml
 import pandas as pd
 import pint  # Unit conversion from inches to mm
 from .data_frame import get_bounding_boxes
@@ -349,6 +351,46 @@ def fit_points_in_bounding_box_params(df_points, bounding_box,
     offset = .5 * (bounding_box - points_bbox * padded_scale)
     offset.index = ['x', 'y']
     return offset, padded_scale
+
+
+def remove_layer(svg_source, layer_name):
+    '''
+    Remove layer(s) from SVG document.
+
+    Arguments
+    ---------
+    svg_source : str or file-like
+        A file path, URI, or file-like object.
+    layer_name : str or list
+        Layer name or list of layer names to remove from SVG document.
+
+    Returns
+    -------
+    StringIO.StringIO
+        File-like object containing XML document with layer(s) removed.
+    '''
+    # Parse input file.
+    xml_root = lxml.etree.parse(svg_source)
+    svg_root = xml_root.xpath('/svg:svg', namespaces=INKSCAPE_NSMAP)[0]
+
+    if isinstance(layer_name, types.StringTypes):
+        layer_name = [layer_name]
+
+    for layer_name_i in layer_name:
+        # Remove existing layer from source, in-memory XML (source file remains
+        # unmodified).
+        layer_xpath = '//svg:g[@inkscape:label="%s"]' % layer_name_i
+        layer_groups = svg_root.xpath(layer_xpath, namespaces=INKSCAPE_NSMAP)
+
+        if layer_groups:
+            for g in layer_groups:
+                g.getparent().remove(g)
+
+    # Write result to `StringIO`.
+    output = StringIO.StringIO()
+    xml_root.write(output)
+    output.seek(0)
+    return output
 
 
 # ## Deprecated ##
