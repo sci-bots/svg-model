@@ -8,8 +8,9 @@ from .draw import draw_lines_svg_layer
 from . import INKSCAPE_NSMAP, compute_shape_centers, svg_shapes_to_df
 
 
-def auto_detect_adjacent_shapes(svg_source, shape_i_column,
-                                layer_name='Connections', shapes_xpath=None,
+def auto_detect_adjacent_shapes(svg_source, shape_i_attr='id',
+                                layer_name='Connections',
+                                shapes_xpath='//svg:path | //svg:polygon',
                                 extend=1.5):
     '''
     Attempt to automatically find "adjacent" shapes in a SVG layer.
@@ -17,28 +18,39 @@ def auto_detect_adjacent_shapes(svg_source, shape_i_column,
     In a layer within a new SVG document, draw each detected connection between
     the center points of the corresponding shapes.
 
-    Args:
+    Parameters
+    ----------
+    svg_source : str
+        Input SVG file as a filepath (or file-like object).
+    shape_i_attr : str, optional
+        Attribute of each shape SVG element that uniquely identifies the shape.
+    layer_name : str, optional
+        Name to use for the output layer where detected connections are drawn.
 
-        svg_source (str) : Input SVG file as a filepath (or file-like object).
+        .. note:: Any existing layer with the same name will be overwritten.
+    shapes_xpath : str, optional
+        XPath path expression to select shape nodes.
+
+        By default, all ``svg:path`` and ``svg:polygon`` elements are selected.
+    extend : float, optional
+        Extend ``x``/``y`` coords by the specified number of absolute units
+        from the center point of each shape.
+
+        Each shape is stretched independently in the ``x`` and ``y`` direction.
+        In each direction, a shape is considered adjacent to all other shapes
+        that are overlapped by the extended shape.
 
     Returns
     -------
-    cStringIO.StringIO
+    StringIO.StringIO
         File-like object containing SVG document with layer named according to
         :data:`layer_name` with the detected connections drawn as ``svg:line``
         instances.
     '''
-    if not isinstance(shape_i_column, types.StringType):
-        raise KeyError('Shape index must be a single column.')
-
     # Read SVG polygons into dataframe, one row per polygon vertex.
-    if shapes_xpath is None:
-        kwargs = {}
-    else:
-        kwargs = {shapes_xpath}
-    df_shapes = svg_shapes_to_df(svg_source, **kwargs)
-    df_shapes = compute_shape_centers(df_shapes, shape_i_column)
-    df_shape_connections = extract_adjacent_shapes(df_shapes, shape_i_column,
+    df_shapes = svg_shapes_to_df(svg_source, xpath=shapes_xpath)
+    df_shapes = compute_shape_centers(df_shapes, shape_i_attr)
+    df_shape_connections = extract_adjacent_shapes(df_shapes, shape_i_attr,
                                                    extend=extend)
 
     # Parse input file.
@@ -46,9 +58,9 @@ def auto_detect_adjacent_shapes(svg_source, shape_i_column,
     svg_root = xml_root.xpath('/svg:svg', namespaces=INKSCAPE_NSMAP)[0]
 
     # Get the center coordinate of each shape.
-    df_shape_centers = (df_shapes.drop_duplicates(subset=[shape_i_column])
-                        [[shape_i_column] + ['x_center', 'y_center']]
-                        .set_index(shape_i_column))
+    df_shape_centers = (df_shapes.drop_duplicates(subset=[shape_i_attr])
+                        [[shape_i_attr] + ['x_center', 'y_center']]
+                        .set_index(shape_i_attr))
 
     # Get the center coordinate of the shapes corresponding to the two
     # endpoints of each connection.
