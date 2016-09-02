@@ -51,7 +51,7 @@ def get_svg_layers(svg_sources):
     return (width, height), layers
 
 
-def merge_svg_layers(svg_sources):
+def merge_svg_layers(svg_sources, share_transform=True):
     '''
     Merge layers from input svg sources into a single XML document.
 
@@ -59,6 +59,8 @@ def merge_svg_layers(svg_sources):
 
         svg_sources (list) : A list of file-like objects, each containing
             one or more XML layers.
+        share_transform (bool) : If exactly one layer has a transform, apply it
+            to *all* other layers as well.
 
     Returns:
 
@@ -66,6 +68,18 @@ def merge_svg_layers(svg_sources):
     '''
     # Get list of XML layers.
     (width, height), layers = get_svg_layers(svg_sources)
+
+    if share_transform:
+        transforms = [layer_i.attrib['transform'] for layer_i in layers
+                      if 'transform' in layer_i.attrib]
+        if len(transforms) > 1:
+            raise ValueError('Transform can only be shared if *exactly one* '
+                             'layer has a transform ({} layers have '
+                             '`transform` attributes)'.format(len(transforms)))
+        elif transforms:
+            # Apply single common transform to all layers.
+            for layer_i in layers:
+                layer_i.attrib['transform'] = transforms[0]
 
     # Create blank XML output document.
     dwg = svgwrite.Drawing(profile='tiny', debug=False, size=(width, height))
