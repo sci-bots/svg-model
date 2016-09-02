@@ -1,9 +1,12 @@
 from lxml import etree
 import cStringIO as StringIO
+import re
 
 import svgwrite
 
-from . import INKSCAPE_NSMAP
+from . import INKSCAPE_NSMAP, INKSCAPE_PPmm
+
+CRE_MM_LENGTH = re.compile(r'^(?P<length>\d+(\.\d+))mm$')
 
 
 def get_svg_layers(svg_sources):
@@ -25,12 +28,21 @@ def get_svg_layers(svg_sources):
     layers = []
     width, height = None, None
 
+    def extract_length(attr):
+        'Extract length in pixels.'
+        match = CRE_MM_LENGTH.match(attr)
+        if match:
+            # Length is specified in millimeters.
+            return INKSCAPE_PPmm.magnitude * float(match.group('length'))
+        else:
+            return float(attr)
+
     for svg_source_i in svg_sources:
         # Parse input file.
         xml_root = etree.parse(svg_source_i)
         svg_root = xml_root.xpath('/svg:svg', namespaces=INKSCAPE_NSMAP)[0]
-        width = max(float(svg_root.attrib['width']), width)
-        height = max(float(svg_root.attrib['height']), height)
+        width = max(extract_length(svg_root.attrib['width']), width)
+        height = max(extract_length(svg_root.attrib['height']), height)
         layers += svg_root.xpath('//svg:g[@inkscape:groupmode="layer"]',
                                  namespaces=INKSCAPE_NSMAP)
 
