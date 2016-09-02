@@ -46,11 +46,12 @@ def svg_shapes_to_df(svg_source, xpath='//svg:path | //svg:polygon',
     pandas.DataFrame
         Frame with one row per vertex for all shapes in :data:`svg_source`,
         with the following columns:
-         - ``path_id``: The ``id`` attribute of the corresponding shape.
          - ``vertex_i``: The index of the vertex within the corresponding
            shape.
          - ``x``: The x-coordinate of the vertex.
          - ``y``: The y-coordinate of the vertex.
+         - other: attributes of the SVG shape element (e.g., ``id``, ``fill``,
+            etc.)
     '''
     from lxml import etree
 
@@ -73,7 +74,7 @@ def svg_shapes_to_df(svg_source, xpath='//svg:path | //svg:polygon',
         if k in attribs_set:
             attribs_set.remove(k)
 
-    attribs = list(attribs_set)
+    attribs = list(sorted(attribs_set))
 
     # Always add 'id' attribute as first attribute.
     if 'id' in attribs:
