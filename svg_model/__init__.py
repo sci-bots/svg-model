@@ -22,8 +22,55 @@ INKSCAPE_PPI = 90
 INKSCAPE_PPmm = INKSCAPE_PPI / (1 * ureg.inch).to('mm')
 
 float_pattern = r'[+-]?\d+(\.\d+)?([eE][+-]?\d+)?'  # 2, 1.23, 23e39, 1.23e-6, etc.
-cre_path_command = re.compile(r'(?P<command>[MLZ])\s+(?P<x>%s),\s*(?P<y>%s)\s*'
-                              % (float_pattern, float_pattern))
+cre_path_command = re.compile(r'((?P<xy_command>[ML])\s+(?P<x>{0}),\s*(?P<y>{0})\s*|'
+                              r'(?P<x_command>[H])\s+(?P<hx>{0})\s*|'
+                              r'(?P<y_command>[V])\s+(?P<vy>{0})\s*|'
+                              r'(?P<command>[Z]\s*))'
+                              .format(float_pattern))
+
+
+def shape_path_points(svg_path_d):
+    '''
+    Parameters
+    ----------
+    svg_path_d : str
+        ``"d"`` attribute of SVG ``path`` element.
+
+    Returns
+    -------
+    list
+        List of coordinates of points found in SVG path.
+
+        Each point is represented by a dictionary with keys ``x`` and ``y``.
+    '''
+    # TODO Add support for relative commands, e.g., `l, h, v`.
+    def _update_path_state(path_state, match):
+        if match.group('xy_command'):
+            for dim_j in 'xy':
+                path_state[dim_j] = float(match.group(dim_j))
+            if path_state.get('x0') is None:
+                for dim_j in 'xy':
+                    path_state['%s0' % dim_j] = path_state[dim_j]
+        elif match.group('x_command'):
+            path_state['x'] = float(match.group('hx'))
+        elif match.group('y_command'):
+            path_state['y'] = float(match.group('vy'))
+        elif match.group('command') == 'Z':
+            for dim_j in 'xy':
+                path_state[dim_j] = path_state['%s0' % dim_j]
+        return path_state
+
+    # Some commands in a SVG path element `"d"` attribute require previous state.
+    #
+    # For example, the `"H"` command is a horizontal move, so the previous
+    # ``y`` position is required to resolve the new `(x, y)` position.
+    #
+    # Iterate through the commands in the `"d"` attribute in order and maintain
+    # the current path position in the `path_state` dictionary.
+    path_state = {'x': None, 'y': None}
+    return [{k: v for k, v in _update_path_state(path_state, match_i)
+             .iteritems() if k in 'xy'} for match_i in cre_path_command
+            .finditer(svg_path_d)]
 
 
 def svg_shapes_to_df(svg_source, xpath='//svg:path | //svg:polygon',
@@ -91,10 +138,9 @@ def svg_shapes_to_df(svg_source, xpath='//svg:path | //svg:polygon',
             # Decode `svg:path` vertices from [`"d"`][1] attribute.
             #
             # [1]: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/d
-            points_i = [base_fields + [i] +
-                        map(float, [m.group(v) for v in 'xy'])
-                        for i, m in enumerate(cre_path_command
-                                              .finditer(shape_i.attrib['d']))]
+            points_i = [base_fields + [i] + [point_i.get(k) for k in 'xy']
+                        for i, point_i in
+                        enumerate(shape_path_points(shape_i.attrib['d']))]
         elif shape_i.tag == '{http://www.w3.org/2000/svg}polygon':
             # Decode `svg:polygon` vertices from [`"points"`][2] attribute.
             #
