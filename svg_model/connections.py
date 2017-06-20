@@ -1,6 +1,7 @@
 # coding: utf-8
 # Copyright 2015
 # Jerry Zhou <jerryzhou@hotmail.ca> and Christian Fobel <christian@fobel.net>
+import re
 import warnings
 
 import pandas as pd
@@ -138,58 +139,129 @@ def get_adjacency_matrix(df_connected):
 
 
 def extract_connections(svg_source, shapes_canvas, line_layer='Connections',
-                        line_xpath=None, namespaces=None):
+                        line_xpath=None, path_xpath=None, namespaces=None):
     '''
-    Load all lines from a layer of an SVG source.  For each line, if endpoints
-    overlap distinct shapes in `shapes_canvas`, add connection between
-    overlapped shapes.
+    Load all ``<svg:line>`` elements and ``<svg:path>`` elements from a layer
+    of an SVG source.  For each element, if endpoints overlap distinct shapes
+    in :data:`shapes_canvas`, add connection between overlapped shapes.
 
-    Args:
+    .. versionchanged:: 0.6.post1
+        Allow both ``<svg:line>`` *and* ``<svg:path>`` instances to denote
+        connected/adjacent shapes.
 
-        svg_source (filepath) : Input SVG file containing connection lines.
-        shapes_canvas (shapes_canvas.ShapesCanvas) : Shapes canvas containing
-            shapes to compare against connection endpoints.
-        line_layer (str) : Name of layer in SVG containing connection lines.
-        line_xpath (str) : XPath string to iterate throught connection lines.
-        namespaces (dict) : SVG namespaces (compatible with `etree.parse`).
+    .. versionadded:: 0.6.post1
+        :data:`path_xpath`
 
-    Returns:
+    Parameters
+    ----------
+    svg_source : filepath
+        Input SVG file containing connection lines.
+    shapes_canvas : shapes_canvas.ShapesCanvas
+        Shapes canvas containing shapes to compare against connection
+        endpoints.
+    line_layer : str
+        Name of layer in SVG containing connection lines.
+    line_xpath : str
+        XPath string to iterate through connection lines.
+    path_xpath : str
+        XPath string to iterate through connection paths.
+    namespaces : dict
+        SVG namespaces (compatible with :func:`etree.parse`).
 
-        (pandas.DataFrame) : Each row corresponds to connection between two
-            shapes in `shapes_canvas`, denoted `source` and `target`.
+    Returns
+    -------
+    pandas.DataFrame
+        Each row corresponds to connection between two shapes in
+        :data:`shapes_canvas`, denoted ``source`` and ``target``.
     '''
     from lxml import etree
 
     if namespaces is None:
+        # Inkscape namespace is required to match SVG elements as well as
+        # Inkscape-specific SVG tags and attributes (e.g., `inkscape:label`).
         namespaces = INKSCAPE_NSMAP
 
+    # Parse SVG source.
     e_root = etree.parse(svg_source)
+    # List to hold records of form: `[<id>, <x1>, <y1>, <x2>, <y2>]`.
     frames = []
 
     if line_xpath is None:
-        line_xpath = ("//svg:g[@inkscape:label='%s']/svg:line"
-                      % line_layer)
+        # Define query to look for `svg:line` elements in top level of layer of
+        # SVG specified to contain connections.
+        line_xpath = ("//svg:g[@inkscape:label='%s']/svg:line" % line_layer)
     coords_columns = ['x1', 'y1', 'x2', 'y2']
 
     for line_i in e_root.xpath(line_xpath, namespaces=namespaces):
+        # Extract start and end coordinate from `svg:line` element.
         line_i_dict = dict(line_i.items())
         values = ([line_i_dict.get('id', None)] +
                   [float(line_i_dict[k]) for k in coords_columns])
+        # Append record for end points of current line.
         frames.append(values)
+
+    # Regular expression pattern to match start and end coordinates of
+    # connection `svg:path` element.
+    cre_path_ends = re.compile(r'^\s*M\s*(?P<start_x>\d+(\.\d+)?),\s*'
+                               r'(?P<start_y>\d+(\.\d+)?).*'
+                               # Diagonal line...
+                               r'((L\s*(?P<end_x>\d+(\.\d+)?),\s*'
+                               r'(?P<end_y>\d+(\.\d+)?))|'
+                               # or Vertical line...
+                               r'(V\s*(?P<end_vy>\d+(\.\d+)?))|'
+                               # or Horizontal line
+                               r'(H\s*(?P<end_hx>\d+(\.\d+)?))'
+                               r')\D*'
+                               r'$')
+
+    if path_xpath is None:
+        # Define query to look for `svg:path` elements in top level of layer of
+        # SVG specified to contain connections.
+        path_xpath = ("//svg:g[@inkscape:label='%s']/svg:path" % line_layer)
+
+    for path_i in e_root.xpath(path_xpath, namespaces=namespaces):
+        path_i_dict = dict(path_i.items())
+        match_i = cre_path_ends.match(path_i_dict['d'])
+        if match_i:
+            # Connection `svg:path` matched required format.  Extract start and
+            # end coordinates.
+            match_dict_i = match_i.groupdict()
+            if match_dict_i['end_vy']:
+                # Path ended with vertical line
+                match_dict_i['end_x'] = match_dict_i['start_x']
+                match_dict_i['end_y'] = match_dict_i['end_vy']
+            if match_dict_i['end_hx']:
+                # Path ended with horizontal line
+                match_dict_i['end_x'] = match_dict_i['end_hx']
+                match_dict_i['end_y'] = match_dict_i['start_y']
+            # Append record for end points of current path.
+            frames.append([path_i_dict['id']] + map(float,
+                                                    (match_dict_i['start_x'],
+                                                     match_dict_i['start_y'],
+                                                     match_dict_i['end_x'],
+                                                     match_dict_i['end_y'])))
 
     if not frames:
         return pd.DataFrame(None, columns=['source', 'target'])
 
     df_connection_lines = pd.DataFrame(frames, columns=['id'] + coords_columns)
 
+    # Use `shapes_canvas.find_shape` to determine shapes overlapped by end
+    # points of each `svg:path` or `svg:line`.
     df_shape_connections_i = pd.DataFrame([[shapes_canvas.find_shape(x1, y1),
                                             shapes_canvas.find_shape(x2, y2)]
                                            for i, (x1, y1, x2, y2) in
                                            df_connection_lines[coords_columns]
                                            .iterrows()],
                                           columns=['source', 'target'])
+    # Order the source and target of each row so the source shape identifier is
+    # always the lowest.
     df_shape_connections_i.sort_index(axis=1, inplace=True)
+    # Tag each shape connection with the corresponding `svg:line`/`svg:path`
+    # identifier.  May be useful, e.g., in debugging.
     df_shape_connections_i['line_id'] = df_connection_lines['id']
+    # Remove connections where source or target shape was not matched (e.g., if
+    # one or more end points does not overlap with a shape).
     return df_shape_connections_i.dropna()
 
 
