@@ -1,0 +1,39 @@
+# Source will be downloaded prior to filling in jinja templates
+source:
+  git_url: ../
+
+package:
+    name: svg-model
+{% if GIT_DESCRIBE_NUMBER > '0' %}
+    version: {{ GIT_DESCRIBE_TAG[1:] }}.{{ GIT_DESCRIBE_NUMBER }}
+{% else %}
+    version: {{ GIT_DESCRIBE_TAG[1:] }}
+{% endif %}
+
+build:
+    number: 0
+
+requirements:
+    build:
+        - python 2.7*
+        - lxml
+        - pandas
+        - paver
+        - pint
+        - pymunk >=4.0.0,<5.0
+        - pyparsing
+        - svgwrite
+        - path_helpers
+
+    run:
+        - lxml
+        - pandas
+        - pint
+        - pymunk >=4.0.0,<5.0
+        - pyparsing
+        - svgwrite
+        - path_helpers
+
+test:
+    imports:
+        - svg_model
