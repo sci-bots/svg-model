@@ -21,8 +21,11 @@ def tesselate_shapes_frame(df_shapes, shape_i_columns):
         shape_i_columns = [shape_i_columns]
 
     for shape_i, df_path in df_shapes.groupby(shape_i_columns):
-        triangulator = Triangulator(df_path[['x', 'y']].values)
-
+        points_i = df_path[['x', 'y']].values
+        if (points_i[0] == points_i[-1]).all():
+            # XXX End point is the same as the start point (do not include it).
+            points_i = points_i[:-1]
+        triangulator = Triangulator(points_i)
         if not isinstance(shape_i, (types.ListType, types.TupleType)):
             shape_i = [shape_i]
 
