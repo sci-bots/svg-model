@@ -9,12 +9,27 @@ def tesselate_shapes_frame(df_shapes, shape_i_columns):
     '''
     Tesselate each shape path into one or more triangles.
 
-    Return `pandas.DataFrame` with columns storing the following fields
-    for each row (where each row corresponds to a triangle vertex):
+    Parameters
+    ----------
+    df_shapes : pandas.DataFrame
+        Table containing vertices of shapes, one row per vertex, with the *at
+        least* the following columns:
+         - ``x``: The x-coordinate of the vertex.
+         - ``y``: The y-coordinate of the vertex.
+    shape_i_columns : str or list
+        Column(s) forming key to differentiate rows/vertices for each distinct
+        shape.
 
-     - `shape_i_columns`: The shape path index column(s).
-     - `triangle_i`: The integer triangle index within each electrode path.
-     - `vertex_i`: The integer vertex index within each triangle.
+    Returns
+    -------
+    pandas.DataFrame
+
+    Table where each row corresponds to a triangle vertex, with the following
+    columns:
+
+     - ``shape_i_columns[]``: The shape path index column(s).
+     - ``triangle_i``: The integer triangle index within each electrode path.
+     - ``vertex_i``: The integer vertex index within each triangle.
     '''
     frames = []
     if isinstance(shape_i_columns, types.StringType):
