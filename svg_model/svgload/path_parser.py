@@ -40,14 +40,20 @@ class PathDataParser(object):
         return self.data[start:self.pos]
 
     def get_number(self):
+        '''
+        .. versionchanged:: 0.9.2
+            Add support for float exponent strings (e.g., ``3.435e-7``).
+
+            Fixes `issue #4 <https://github.com/wheeler-microfluidics/svg-model/issues/4>`.
+        '''
         number = None
         start = self.get_char('0123456789.-')
         if start:
             number = start
-            finish = self.get_chars('0123456789.')
+            finish = self.get_chars('-e0123456789.')
             if finish:
                 number += finish
-        if '.' in number:
+        if any(c in number for c in '.e'):
             return float(number)
         else:
             return int(number)
