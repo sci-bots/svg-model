@@ -1,9 +1,12 @@
 # coding: utf-8
+from __future__ import absolute_import
+from __future__ import unicode_literals
 import itertools
 import types
 
 import pandas as pd
 import pymunk as pm
+from six.moves import zip
 
 
 def get_shapes_pymunk_space(df_convex_shapes, shape_i_columns):
@@ -18,7 +21,7 @@ def get_shapes_pymunk_space(df_convex_shapes, shape_i_columns):
     up the index of the convex shape associated with a `Body` returned by a
     `pymunk` point query in the `Space`.
     '''
-    if isinstance(shape_i_columns, types.StringType):
+    if isinstance(shape_i_columns, bytes):
         shape_i_columns = [shape_i_columns]
 
     space = pm.Space()
@@ -28,7 +31,7 @@ def get_shapes_pymunk_space(df_convex_shapes, shape_i_columns):
     convex_groups = df_convex_shapes.groupby(shape_i_columns)
 
     for shape_i, df_i in convex_groups:
-        if not isinstance(shape_i, (types.ListType, types.TupleType)):
+        if not isinstance(shape_i, (list, tuple)):
             shape_i = [shape_i]
 
         if hasattr(pm.Body, 'STATIC'):
@@ -41,7 +44,7 @@ def get_shapes_pymunk_space(df_convex_shapes, shape_i_columns):
             body = pm.Body()
         # Using the code below is about 66% faster than:
         #     `df_i[['x', 'y']].values`.
-        points = [[x, y] for x, y in itertools.izip(df_i.x, df_i.y)]
+        points = [[x, y] for x, y in zip(df_i.x, df_i.y)]
         poly = pm.Poly(body, points)
         space.add(poly)
         bodies.append([body, shape_i[0]])

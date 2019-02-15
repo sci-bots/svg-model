@@ -1,4 +1,6 @@
 # coding: utf-8
+from __future__ import absolute_import
+from __future__ import unicode_literals
 import types
 
 import numpy as np
@@ -12,6 +14,20 @@ from .point_query import get_shapes_pymunk_space
 
 
 def get_transform(offset, scale):
+    '''
+    Parameters
+    ----------
+    offset : pandas.Series
+        Cartesian ``(x, y)`` coordinate of offset origin.
+    scale : pandas.Series
+        Scaling factor for ``x`` and ``y`` dimensions.
+
+    Returns
+    -------
+    pandas.DataFrame
+        3x3 transformation matrix resulting in specified `x/y` offset and
+        scale.  **Note that third row label is ``w`` and not ``z``).**
+    '''
     return pd.DataFrame([[scale, 0, offset.x], [0, scale, offset.y],
                          [0, 0, 1]], index=['x', 'y', 'w'])
 
@@ -40,7 +56,7 @@ class ShapesCanvas(object):
            `height`.
         '''
         self.df_shapes = df_shapes
-        if isinstance(shape_i_columns, types.StringType):
+        if isinstance(shape_i_columns, bytes):
             shape_i_columns = [shape_i_columns]
         self.shape_i_columns = shape_i_columns
 

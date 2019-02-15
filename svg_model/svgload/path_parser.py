@@ -14,6 +14,7 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
+from __future__ import unicode_literals
 from ..loop import Loop
 from ..geo_path import ColoredPath
 
@@ -202,7 +203,7 @@ class PathParser(object):
 
 
     def get_id(self, attributes):
-        if 'id' in attributes.keys():
+        if 'id' in list(attributes.keys()):
             return attributes['id']
         else:
             self.next_id += 1
@@ -284,7 +285,7 @@ class PathParser(object):
         loops = tracer.to_loops(path_tuple)
         path = ColoredPath(loops)
 
-        if 'style' in tag.attrib.keys():
+        if 'style' in list(tag.attrib.keys()):
             style_data = tag.attrib['style']
             path.color = self.parse_style(style_data)
 

@@ -1,9 +1,8 @@
 include README
 include LICENSE
-include RELEASE-VERSION
-include version.py
 include setup.py
-include paver-minilib.zip
 recursive-include svg_model *
 recursive-exclude svg_model *.pyc
 recursive-exclude svg_model *~
+include versioneer.py
+include svg_model/_version.py

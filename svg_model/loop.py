@@ -17,6 +17,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #from pymunk import moment_for_poly, Poly
 
 
+from __future__ import unicode_literals
+from six.moves import range
 class Loop(object):
 
     density = 1
@@ -65,7 +67,7 @@ class Loop(object):
 
     def get_centroid(self):
         x, y = 0, 0
-        for i in xrange(len(self.verts)):
+        for i in range(len(self.verts)):
             j = (i + 1) % len(self.verts)
             factor = (
                 self.verts[j][0] * self.verts[i][1] -
@@ -85,7 +87,7 @@ class Loop(object):
     def offset(self, x, y):
         self.verts = [
             (self.verts[i][0] + x, self.verts[i][1] + y)
-            for i in xrange(len(self.verts))
+            for i in range(len(self.verts))
         ]
 
 

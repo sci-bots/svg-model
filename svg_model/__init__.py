@@ -1,14 +1,21 @@
 # coding: utf-8
-import cStringIO as StringIO
+from __future__ import absolute_import
+from __future__ import unicode_literals
 import re
 import types
 import warnings
 
+from .data_frame import get_bounding_boxes
+from six.moves import map
+from six.moves import cStringIO as StringIO
 import lxml
 import pandas as pd
 import pint  # Unit conversion from inches to mm
-from .data_frame import get_bounding_boxes
+import six
 
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
 
 XHTML_NAMESPACE = "http://www.w3.org/2000/svg"
 NSMAP = {'svg' : XHTML_NAMESPACE}
@@ -68,8 +75,7 @@ def shape_path_points(svg_path_d):
     # Iterate through the commands in the `"d"` attribute in order and maintain
     # the current path position in the `path_state` dictionary.
     path_state = {'x': None, 'y': None}
-    return [{k: v for k, v in _update_path_state(path_state, match_i)
-             .iteritems() if k in 'xy'} for match_i in cre_path_command
+    return [{k: v for k, v in six.iteritems(_update_path_state(path_state, match_i)) if k in 'xy'} for match_i in cre_path_command
             .finditer(svg_path_d)]
 
 
@@ -117,7 +123,7 @@ def svg_shapes_to_df(svg_source, xpath='//svg:path | //svg:polygon',
     #  - `fill`, `stroke` (as part of `"style"` attribute)
     #  - `"transform"`: matrix, scale, etc.
     for shape_i in e_root.xpath(xpath, namespaces=namespaces):
-        attribs_set.update(shape_i.attrib.keys())
+        attribs_set.update(list(shape_i.attrib.keys()))
 
     for k in ('d', 'points'):
         if k in attribs_set:
@@ -145,7 +151,7 @@ def svg_shapes_to_df(svg_source, xpath='//svg:path | //svg:polygon',
             # Decode `svg:polygon` vertices from [`"points"`][2] attribute.
             #
             # [2]: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/points
-            points_i = [base_fields + [i] + map(float, v.split(','))
+            points_i = [base_fields + [i] + list(map(float, v.split(',')))
                         for i, v in enumerate(shape_i.attrib['points']
                                               .strip().split(' '))]
         else:
@@ -231,7 +237,7 @@ def compute_shape_centers(df_shapes, shape_i_column, inplace=False):
          - ``x_center_offset``/``y_center_offset``:
              * Coordinates of each vertex coordinate relative to shape center.
     '''
-    if not isinstance(shape_i_column, types.StringType):
+    if not isinstance(shape_i_column, bytes):
         raise KeyError('Shape index must be a single column.')
 
     if not inplace:
@@ -419,7 +425,7 @@ def remove_layer(svg_source, layer_name):
     xml_root = lxml.etree.parse(svg_source)
     svg_root = xml_root.xpath('/svg:svg', namespaces=INKSCAPE_NSMAP)[0]
 
-    if isinstance(layer_name, types.StringTypes):
+    if isinstance(layer_name, str):
         layer_name = [layer_name]
 
     for layer_name_i in layer_name:

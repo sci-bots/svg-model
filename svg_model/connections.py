@@ -1,6 +1,8 @@
 # coding: utf-8
 # Copyright 2015
 # Jerry Zhou <jerryzhou@hotmail.ca> and Christian Fobel <christian@fobel.net>
+from __future__ import absolute_import
+from __future__ import unicode_literals
 import re
 import warnings
 
@@ -9,6 +11,7 @@ import numpy as np
 
 from . import INKSCAPE_NSMAP
 from .draw import draw_lines_svg_layer as _draw_lines_svg_layer
+from six.moves import map
 
 
 def extend_shapes(df_shapes, axis, distance):
@@ -194,7 +197,7 @@ def extract_connections(svg_source, shapes_canvas, line_layer='Connections',
 
     for line_i in e_root.xpath(line_xpath, namespaces=namespaces):
         # Extract start and end coordinate from `svg:line` element.
-        line_i_dict = dict(line_i.items())
+        line_i_dict = dict(list(line_i.items()))
         values = ([line_i_dict.get('id', None)] +
                   [float(line_i_dict[k]) for k in coords_columns])
         # Append record for end points of current line.
@@ -220,7 +223,7 @@ def extract_connections(svg_source, shapes_canvas, line_layer='Connections',
         path_xpath = ("//svg:g[@inkscape:label='%s']/svg:path" % line_layer)
 
     for path_i in e_root.xpath(path_xpath, namespaces=namespaces):
-        path_i_dict = dict(path_i.items())
+        path_i_dict = dict(list(path_i.items()))
         match_i = cre_path_ends.match(path_i_dict['d'])
         if match_i:
             # Connection `svg:path` matched required format.  Extract start and
@@ -235,11 +238,11 @@ def extract_connections(svg_source, shapes_canvas, line_layer='Connections',
                 match_dict_i['end_x'] = match_dict_i['end_hx']
                 match_dict_i['end_y'] = match_dict_i['start_y']
             # Append record for end points of current path.
-            frames.append([path_i_dict['id']] + map(float,
+            frames.append([path_i_dict['id']] + list(map(float,
                                                     (match_dict_i['start_x'],
                                                      match_dict_i['start_y'],
                                                      match_dict_i['end_x'],
-                                                     match_dict_i['end_y'])))
+                                                     match_dict_i['end_y']))))
 
     if not frames:
         return pd.DataFrame(None, columns=['source', 'target'])
