@@ -1,8 +1,11 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
 import numpy as np
 import pandas as pd
 import warnings
 
 from .svgload import svg_parser
+import six
 
 
 def get_shape_areas(df_shapes, shape_i_columns, signed=False):
@@ -132,7 +135,7 @@ def get_svg_frame(svg_filepath):
     parser = svg_parser.SvgParser()
     svg = parser.parse_file(svg_filepath, lambda *args: None)
     frames = []
-    for k, p in svg.paths.iteritems():
+    for k, p in six.iteritems(svg.paths):
         svg_frame = get_svg_path_frame(p)
         svg_frame.insert(0, 'path_id', k)
         frames.append(svg_frame)

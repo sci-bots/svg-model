@@ -14,6 +14,8 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
+from __future__ import absolute_import
+from __future__ import unicode_literals
 import warnings
 from collections import OrderedDict
 
@@ -22,6 +24,7 @@ from path_helpers import path
 from .path_parser import PathParser, ParseError
 from ..loop import Loop
 from ..geo_path import Path
+import six
 
 
 class SvgParseError(Exception):
@@ -76,7 +79,7 @@ class Svg(object):
         return boundary
 
     def all_verts(self):
-        for svg_path in self.paths.itervalues():
+        for svg_path in six.itervalues(self.paths):
             for loop in svg_path.loops:
                 for vert in loop.verts:
                     yield vert
@@ -156,7 +159,7 @@ class SvgParser(object):
                 id, svg_path = parser.parse(path_tag)
                 if svg_path.loops:
                     svg.add_path(id, svg_path)
-            except (ParseError, ), why:
+            except (ParseError, ) as why:
                 filename = getattr(self, 'filename', None)
                 args = (filename, path_tag, why.message)
                 if on_error:

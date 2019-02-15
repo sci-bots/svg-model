@@ -1,4 +1,6 @@
 # coding: utf-8
+from __future__ import absolute_import
+from __future__ import unicode_literals
 import types
 
 import pandas as pd
@@ -32,7 +34,7 @@ def tesselate_shapes_frame(df_shapes, shape_i_columns):
      - ``vertex_i``: The integer vertex index within each triangle.
     '''
     frames = []
-    if isinstance(shape_i_columns, types.StringType):
+    if isinstance(shape_i_columns, bytes):
         shape_i_columns = [shape_i_columns]
 
     for shape_i, df_path in df_shapes.groupby(shape_i_columns):
@@ -40,8 +42,12 @@ def tesselate_shapes_frame(df_shapes, shape_i_columns):
         if (points_i[0] == points_i[-1]).all():
             # XXX End point is the same as the start point (do not include it).
             points_i = points_i[:-1]
-        triangulator = Triangulator(points_i)
-        if not isinstance(shape_i, (types.ListType, types.TupleType)):
+        try:
+            triangulator = Triangulator(points_i)
+        except:
+            import pdb; pdb.set_trace()
+            continue
+        if not isinstance(shape_i, (list, tuple)):
             shape_i = [shape_i]
 
         for i, triangle_i in enumerate(triangulator.triangles()):
