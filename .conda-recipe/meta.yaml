@@ -5,13 +5,19 @@ source:
 package:
     name: svg-model
 {% if GIT_DESCRIBE_NUMBER > '0' %}
-    version: {{ GIT_DESCRIBE_TAG[1:] }}.{{ GIT_DESCRIBE_NUMBER }}
+    version: {{ GIT_DESCRIBE_TAG[1:] }}.post{{ GIT_DESCRIBE_NUMBER }}
 {% else %}
     version: {{ GIT_DESCRIBE_TAG[1:] }}
 {% endif %}
 
 build:
+    noarch: python
     number: 0
+    script:
+        # Generate `setup.py` from `pavement.py` definition.
+        - python -m paver generate_setup
+        # Install source directory as Python package.
+        - python -B setup.py install --single-version-externally-managed --record record.txt
 
 requirements:
     build:
