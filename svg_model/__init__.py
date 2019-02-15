@@ -13,6 +13,9 @@ import pandas as pd
 import pint  # Unit conversion from inches to mm
 import six
 
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
 
 XHTML_NAMESPACE = "http://www.w3.org/2000/svg"
 NSMAP = {'svg' : XHTML_NAMESPACE}

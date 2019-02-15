@@ -9,12 +9,12 @@ from os.path import splitext
 from setuptools import find_packages
 from setuptools import setup
 
-sys.path.insert(0, path('.').abspath())
-import version
+import versioneer
 
 # See https://blog.ionelmc.ro/2014/06/25/python-packaging-pitfalls/
 setup(name='svg_model',
-      version=version.getVersion(),
+      version=versioneer.get_version(),
+      cmdclass=versioneer.get_cmdclass(),
       description='A Python module for parsing an SVG file to a group of '
       'paths.',
       keywords='svg model pymunk',
