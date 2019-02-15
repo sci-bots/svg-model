@@ -21,10 +21,11 @@ build:
 
 requirements:
     build:
-        - python 2.7*
         - lxml
         - pandas
         - paver
+        # Work around https://github.com/conda-forge/pint-feedstock/issues/23
+        - funcsigs
         - pint
         - pymunk >=4.0.0,<5.0
         - pyparsing
@@ -34,6 +35,8 @@ requirements:
     run:
         - lxml
         - pandas
+        # Work around https://github.com/conda-forge/pint-feedstock/issues/23
+        - funcsigs
         - pint
         - pymunk >=4.0.0,<5.0
         - pyparsing
