@@ -25,6 +25,7 @@ requirements:
         - pandas
         # Work around https://github.com/conda-forge/pint-feedstock/issues/23
         - funcsigs
+        - pandas
         - pint
         - pymunk >=4.0.0,<5.0
         - pyparsing
@@ -36,6 +37,7 @@ requirements:
         - pandas
         # Work around https://github.com/conda-forge/pint-feedstock/issues/23
         - funcsigs
+        - pandas
         - pint
         - pymunk >=4.0.0,<5.0
         - pyparsing
