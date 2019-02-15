@@ -1,21 +1,21 @@
+{% if GIT_DESCRIBE_NUMBER > '0' %}
+{% set GIT_VERSION = GIT_DESCRIBE_TAG[1:] + '.post' + GIT_DESCRIBE_NUMBER %}
+{% else %}
+{% set GIT_VERSION = GIT_DESCRIBE_TAG[1:] %}
+{% endif %}
+
 # Source will be downloaded prior to filling in jinja templates
 source:
   git_url: ../
 
 package:
     name: svg-model
-{% if GIT_DESCRIBE_NUMBER > '0' %}
-    version: {{ GIT_DESCRIBE_TAG[1:] }}.post{{ GIT_DESCRIBE_NUMBER }}
-{% else %}
-    version: {{ GIT_DESCRIBE_TAG[1:] }}
-{% endif %}
+    version: {{ GIT_VERSION }}
 
 build:
     noarch: python
     number: 0
     script:
-        # Generate `setup.py` from `pavement.py` definition.
-        - python -m paver generate_setup
         # Install source directory as Python package.
         - python -B setup.py install --single-version-externally-managed --record record.txt
 
@@ -23,7 +23,6 @@ requirements:
     build:
         - lxml
         - pandas
-        - paver
         # Work around https://github.com/conda-forge/pint-feedstock/issues/23
         - funcsigs
         - pint
